@@ -118,7 +118,7 @@ void unit_test_decode_yenc()
     {
         for (auto& it : actions1)
         {
-            it->perform();
+            it->PerformTask();
             download.Complete(*it, actions2);
         }
         actions1 = std::move(actions2);
@@ -157,7 +157,7 @@ void unit_test_decode_yenc_bug_32()
     {
         for (auto& it : actions1)
         {
-            it->perform();
+            it->PerformTask();
             download.Complete(*it, actions2);
         }
         actions1 = std::move(actions2);
@@ -196,7 +196,7 @@ void unit_test_decode_uuencode()
     {
         for (auto& it : actions1)
         {
-            it->perform();
+            it->PerformTask();
             download.Complete(*it, actions2);
         }
         actions1 = std::move(actions2);
@@ -255,11 +255,11 @@ void unit_test_decode_from_files()
         download.Complete(*cmds, decodes);
         for (auto& dec : decodes)
         {
-            dec->perform();
+            dec->PerformTask();
             std::vector<std::unique_ptr<nf::ThreadTask>> writes;
             download.Complete(*dec, writes);
             for (auto& io : writes)
-                io->perform();
+                io->PerformTask();
         }
     }
 }
@@ -327,7 +327,7 @@ void unit_test_pack_load()
             {
                 for (auto& it : actions1)
                 {
-                    it->perform();
+                    it->PerformTask();
                     download.Complete(*it, actions2);
                 }
                 actions1 = std::move(actions2);
@@ -371,7 +371,7 @@ void unit_test_pack_load()
             {
                 for (auto& it : actions1)
                 {
-                    it->perform();
+                    it->PerformTask();
                     download.Complete(*it, actions2);
                 }
                 actions1 = std::move(actions2);

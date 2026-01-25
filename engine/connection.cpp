@@ -98,7 +98,7 @@ public:
     resolve(std::shared_ptr<impl> s) : state_(s)
     {}
 
-    virtual void xperform() override
+    virtual void DoWork() override
     {
         std::lock_guard<std::mutex> lock(state_->mutex);
 
@@ -138,7 +138,7 @@ public:
         LOG_I("Hostname resolved to ", ipv4{state_->addr});
     }
 
-    virtual std::string describe() const override
+    virtual std::string Describe() const override
     {
         return "Resolve " + state_->hostname;
     }
@@ -155,7 +155,7 @@ public:
         state_->socket = MakeNewsflashSocket(state_->ssl);
     }
 
-    virtual void xperform() override
+    virtual void DoWork() override
     {
         std::lock_guard<std::mutex> lock(state_->mutex);
 
@@ -196,7 +196,7 @@ public:
         LOG_I("Socket connection ready");
     }
 
-    virtual std::string describe() const override
+    virtual std::string Describe() const override
     {
         return str("Connect to ", ipv4{state_->addr}, ":", state_->port);
     }
@@ -223,12 +223,12 @@ public:
         state_->session->SetEnablePipelining(s->pipelining);
         state_->session->SetEnableCompression(s->compression);
     }
-    virtual std::string describe() const override
+    virtual std::string Describe() const override
     {
         return "Initialize NNTP session";
     }
 
-    virtual void xperform() override
+    virtual void DoWork() override
     {
         std::lock_guard<std::mutex> lock(state_->mutex);
 
@@ -308,7 +308,7 @@ public:
     execute(std::shared_ptr<impl> s, std::shared_ptr<CmdList> cmd) : state_(s), cmds_(cmd)
     {}
 
-    virtual void xperform() override
+    virtual void DoWork() override
     {
         std::lock_guard<std::mutex> lock(state_->mutex);
 
@@ -554,7 +554,7 @@ public:
 
     virtual void run_completion_callbacks() override
     {
-        const bool has_exception = this->has_exception();
+        const bool has_exception = this->HasException();
         const bool has_connection_error = state_->pending_connection_error != Connection::Error::None;
         const bool has_socket_error = state_->pending_socket_error != std::error_code();
         const bool has_session_error = state_->pending_session_error != Session::Error::None;
@@ -570,7 +570,7 @@ public:
         state_->on_cmdlist_done_callback(completion);
     }
 
-    virtual std::string describe() const override
+    virtual std::string Describe() const override
     {
         return "Execute cmdlist";
     }
@@ -588,7 +588,7 @@ public:
     disconnect(std::shared_ptr<impl> s) : state_(s)
     {}
 
-    virtual void xperform() override
+    virtual void DoWork() override
     {
         std::lock_guard<std::mutex> lock(state_->mutex);
 
@@ -638,7 +638,7 @@ public:
         LOG_D("Disconnect complete");
     }
 
-    virtual std::string describe() const override
+    virtual std::string Describe() const override
     {
         return "Disconnect";
     }
@@ -652,7 +652,7 @@ public:
     ping(std::shared_ptr<impl> s) : state_(s)
     {}
 
-    virtual void xperform() override
+    virtual void DoWork() override
     {
         std::lock_guard<std::mutex> lock(state_->mutex);
 
@@ -694,7 +694,7 @@ public:
         }
     }
 
-    virtual std::string describe() const override
+    virtual std::string Describe() const override
     {
         return "Ping";
     }

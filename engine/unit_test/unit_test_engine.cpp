@@ -96,7 +96,7 @@ public:
         DecodeJob(const std::string& cmd) : cmd_(cmd)
         {}
 
-        virtual void xperform() override
+        virtual void DoWork() override
         {
             if (cmd_ == "<throw_exception_on_decode>")
                 throw std::runtime_error("some error");
@@ -434,7 +434,7 @@ class TestConnection : public Connection
 public:
     struct Resolve : public ThreadTask
     {
-        virtual void xperform() override
+        virtual void DoWork() override
         {
             if (host_ == "test.exception.com")
                 throw std::runtime_error("surprise!");
@@ -444,7 +444,7 @@ public:
 
     struct Connect : public ThreadTask
     {
-        virtual void xperform() override
+        virtual void DoWork() override
         {}
     };
 
@@ -453,7 +453,7 @@ public:
         Initialize(std::shared_ptr<Session> session) : session_(session)
         {}
 
-        virtual void xperform() override
+        virtual void DoWork() override
         {
             std::string command;
             session_->SetSendCallback([&](const std::string& cmd) {
@@ -495,19 +495,19 @@ public:
 
     struct Disconnect : public ThreadTask
     {
-        virtual void xperform() override
+        virtual void DoWork() override
         {}
     };
 
     struct Ping : public ThreadTask
     {
-        virtual void xperform() override
+        virtual void DoWork() override
         {}
     };
 
     struct DummyExecute : public ThreadTask
     {
-        virtual void xperform() override
+        virtual void DoWork() override
         {}
 
         virtual void run_completion_callbacks() override
@@ -516,7 +516,7 @@ public:
             completion.cmds          = cmdlist;
             completion.total_bytes   = 300;
             completion.content_bytes = 200;
-            completion.execution_did_complete = !has_exception();
+            completion.execution_did_complete = !HasException();
             callback(completion);
         }
         std::shared_ptr<CmdList> cmdlist;
@@ -525,7 +525,7 @@ public:
 
     struct Execute : public ThreadTask
     {
-        virtual void xperform() override
+        virtual void DoWork() override
         {
             std::string command;
             session->SetSendCallback([&](const std::string& out) {
@@ -653,7 +653,7 @@ public:
         }
         virtual void run_completion_callbacks() override
         {
-            const bool has_exception = this->has_exception();
+            const bool has_exception = this->HasException();
             const bool has_error = this->error != Connection::Error::None;
             const bool has_any_error = has_exception || has_error;
 

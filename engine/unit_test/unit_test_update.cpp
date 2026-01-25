@@ -334,13 +334,13 @@ void unit_test_data()
 
         u.Complete(*cmd, actions);
         auto act = std::move(actions[0]);
-        act->perform();
-        BOOST_REQUIRE(!act->has_exception());
+        act->PerformTask();
+        BOOST_REQUIRE(!act->HasException());
         actions.clear();
         u.Complete(*act, actions);
         act = std::move(actions[0]);
-        act->perform();
-        BOOST_REQUIRE(!act->has_exception());
+        act->PerformTask();
+        BOOST_REQUIRE(!act->HasException());
         actions.clear();
         u.Complete(*act, actions);
         u.Commit();
@@ -516,15 +516,15 @@ void unit_test_data()
 
         u.Complete(*cmd, actions);
         auto act = std::move(actions[0]);
-        act->perform();
-        BOOST_REQUIRE(!act->has_exception());
+        act->PerformTask();
+        BOOST_REQUIRE(!act->HasException());
 
         actions.clear();
 
         u.Complete(*act, actions);
         act = std::move(actions[0]);
-        act->perform();
-        BOOST_REQUIRE(!act->has_exception());
+        act->PerformTask();
+        BOOST_REQUIRE(!act->HasException());
         actions.clear();
         u.Complete(*act, actions);
         u.Commit();
@@ -662,15 +662,15 @@ void unit_test_index()
         u.Complete(*cmd, actions);
 
         auto a = std::move(actions[0]);
-        a->perform();
-        BOOST_REQUIRE(!a->has_exception());
+        a->PerformTask();
+        BOOST_REQUIRE(!a->HasException());
         actions.clear();
 
         u.Complete(*a, actions);
 
         a = std::move(actions[0]);
-        a->perform();
-        BOOST_REQUIRE(!a->has_exception());
+        a->PerformTask();
+        BOOST_REQUIRE(!a->HasException());
         actions.clear();
         u.Complete(*a, actions);
         u.Commit();

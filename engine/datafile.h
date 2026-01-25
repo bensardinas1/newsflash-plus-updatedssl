@@ -70,7 +70,7 @@ namespace newsflash
             // note that there's a little hack here and the offset is offset by +1
             // so that we're using 0 for indicating that offset is not being used at all.
             auto write = std::make_unique<WriteOp>(offset, data, impl_);
-            write->set_affinity(ThreadTask::affinity::single_thread);
+            write->SetAffinity(ThreadTask::Affinity::SingleThread);
             write->set_callback(callback);
             impl_->AddPendingWrite();
             return std::move(write);
@@ -245,11 +245,11 @@ namespace newsflash
             , offset_(offset)
             {}
 
-            virtual void xperform() override
+            virtual void DoWork() override
             {
                 impl_->Write(offset_, data_);
             }
-            virtual std::string describe() const override
+            virtual std::string Describe() const override
             { return "DataFile::WriteOp"; }
 
             virtual void run_completion_callbacks() override

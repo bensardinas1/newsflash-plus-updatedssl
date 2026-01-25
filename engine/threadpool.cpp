@@ -109,7 +109,7 @@ private:
             queue.pop();
             lock.unlock();
 
-            next->perform();
+            next->PerformTask();
 
             state_->callback(next);
             state_->queue_size--;
@@ -145,7 +145,7 @@ public:
         {
             ThreadTask* top = queue_.front();
             queue_.pop();
-            top->perform();
+            top->PerformTask();
             state_->callback(top);
             state_->queue_size--;
         }
@@ -218,17 +218,17 @@ void ThreadPool::Submit(ThreadTask* act)
 {
 
     const auto num_threads  = pooled_threads_.size();
-    const auto affinity = act->get_affinity();
+    const auto affinity = act->GetAffinity();
     Thread* thread = nullptr;
 
-    if (affinity == ThreadTask::affinity::any_thread)
+    if (affinity == ThreadTask::Affinity::AnyThread)
     {
         thread = pooled_threads_[round_robin_ % num_threads].get();
         round_robin_++;
     }
     else
     {
-        const auto act_id = act->get_owner();
+        const auto act_id = act->GetOwnerId();
         thread = pooled_threads_[act_id % num_threads].get();
     }
     thread->Submit(act);

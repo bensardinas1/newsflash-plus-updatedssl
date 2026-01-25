@@ -166,7 +166,7 @@ public:
     parse(Buffer&& buff) : buffer_(std::move(buff))
     {}
 
-    virtual void xperform() override
+    virtual void DoWork() override
     {
         nntp::linebuffer lines(buffer_.Content(), buffer_.GetContentLength());
         auto beg = lines.begin();
@@ -185,7 +185,7 @@ public:
     virtual std::size_t size() const override
     { return buffer_.GetContentLength(); }
 
-	virtual std::string describe() const override
+	virtual std::string Describe() const override
 	{ return "Parse XOVER"; }
 private:
     friend class Update;
@@ -201,7 +201,7 @@ public:
     store(std::shared_ptr<state> s) : state_(s), first_(0), last_(0)
     {}
 
-    virtual void xperform() override
+    virtual void DoWork() override
     {
         std::lock_guard<std::mutex> cancel_lock(state_->cancel_operation_mutex);
         if (state_->cancel_operation)
@@ -351,7 +351,7 @@ public:
             db->flush();
     }
 
-    virtual std::string describe() const override
+    virtual std::string Describe() const override
     { return "Update Db"; }
 
     virtual std::size_t size() const override
@@ -618,7 +618,7 @@ void Update::Complete(CmdList& cmd, std::vector<std::unique_ptr<ThreadTask>>& ne
                 continue;
 
             std::unique_ptr<ThreadTask> p(new parse(std::move(buffer)));
-            p->set_affinity(ThreadTask::affinity::any_thread);
+            p->SetAffinity(ThreadTask::Affinity::AnyThread);
             next.push_back(std::move(p));
         }
     }
@@ -631,7 +631,7 @@ void Update::Complete(ThreadTask& a, std::vector<std::unique_ptr<ThreadTask>>& n
         std::unique_ptr<store> s(new store(state_));
         s->articles_ = std::move(p->articles_);
         s->bytes_ = p->size();
-        s->set_affinity(ThreadTask::affinity::single_thread);
+        s->SetAffinity(ThreadTask::Affinity::SingleThread);
         next.push_back(std::move(s));
     }
     if (auto* p = dynamic_cast<store*>(&a))

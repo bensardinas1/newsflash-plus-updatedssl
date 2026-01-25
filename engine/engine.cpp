@@ -322,11 +322,11 @@ struct Engine::State {
 
     void submit(ThreadTask* a)
     {
-        if (a->get_affinity() == ThreadTask::affinity::gui_thread)
+        if (a->GetAffinity() == ThreadTask::Affinity::GuiThread)
         {
-            LOG_D("Action ", a->get_id(), " (", a->describe(),  ") perform by current thread.");
+            LOG_D("Action ", a->GetTaskId(), " (", a->Describe(),  ") perform by current thread.");
 
-            a->perform();
+            a->PerformTask();
             std::lock_guard<std::mutex> lock(mutex);
             actions.emplace(a);
             on_notify_callback();
@@ -334,7 +334,7 @@ struct Engine::State {
         }
         else
         {
-            LOG_D("Action ", a->get_id(), " (", a->describe(), ") submitted to the threadpool.");
+            LOG_D("Action ", a->GetTaskId(), " (", a->Describe(), ") submitted to the threadpool.");
 
             threads->Submit(a);
         }
@@ -355,8 +355,8 @@ struct Engine::State {
         std::unique_ptr<ThreadTask> act = std::move(actions.front());
         actions.pop();
 
-        LOG_D("Action ", act->get_id(), " (", act->describe(), ") is complete");
-        LOG_D("Action ", act->get_id(), " has exception: ", act->has_exception());
+        LOG_D("Action ", act->GetTaskId(), " (", act->Describe(), ") is complete");
+        LOG_D("Action ", act->GetTaskId(), " has exception: ", act->HasException());
         return act;
     }
 
@@ -561,16 +561,16 @@ public:
 
     void CompleteAction(Engine::State& engine_state, std::unique_ptr<ThreadTask> act)
     {
-        LOG_D("Connection ", ui_.id, " action ", act->get_id(), "(", act->describe(), ") complete");
+        LOG_D("Connection ", ui_.id, " action ", act->GetTaskId(), "(", act->Describe(), ") complete");
 
-        assert(act->get_owner() == ui_.id);
+        assert(act->GetOwnerId() == ui_.id);
 
         ticks_to_ping_ = 30;
         ticks_to_conn_ = 5;
 
         try
         {
-            if (act->has_exception())
+            if (act->HasException())
                 act->rethrow();
         }
         catch (const std::system_error& e)
@@ -749,9 +749,9 @@ private:
         if (!a) return;
 
         LOG_D("Connection ", ui_.id, " current task ", ui_.task, " (", ui_.desc, ")");
-        LOG_D("Connection ", ui_.id, " new action ", a->get_id(), "(", a->describe(), ")");
-        a->set_owner(ui_.id);
-        a->set_log(logger_);
+        LOG_D("Connection ", ui_.id, " new action ", a->GetTaskId(), "(", a->Describe(), ")");
+        a->SetOwnerId(ui_.id);
+        a->SetLogger(logger_);
         state.submit(a.release(), thread_);
     }
 
@@ -801,7 +801,7 @@ public:
     }
     void on_action(Engine::State& state, std::unique_ptr<ThreadTask> act)
     {
-        assert(act->get_owner() == id_);
+        assert(act->GetOwnerId() == id_);
 
         if (state.on_test_log_callback)
         {
@@ -813,7 +813,7 @@ public:
         }
         logger_->Clear();
 
-        if (act->has_exception())
+        if (act->HasException())
         {
             success_  = false;
             finished_ = true;
@@ -855,8 +855,8 @@ public:
 private:
     void do_action(Engine::State& state, std::unique_ptr<ThreadTask> act)
     {
-        act->set_owner(id_);
-        act->set_log(logger_);
+        act->SetOwnerId(id_);
+        act->SetLogger(logger_);
         state.submit(act.release());
     }
 
@@ -1157,14 +1157,14 @@ public:
     {
         const auto size = act->size();
 
-        assert(act->get_owner() == ui_.task_id);
+        assert(task->GetOwnerId() == ui_.task_id);
         assert(num_active_actions_ > 0);
         assert(size <= num_bytes_queued_);
 
         num_active_actions_--;
         num_bytes_queued_ -= size;
 
-        LOG_D("Task ", ui_.task_id, " receiving action ", act->get_id(), " (", act->describe(), ")");
+        LOG_D("Task ", ui_.task_id, " receiving action ", act->GetTaskId(), " (", act->Describe(), ")");
         LOG_D("Task ", ui_.task_id, " num_active_actions ", num_active_actions_);
         LOG_D("Task ", ui_.task_id, " has ", num_bytes_queued_ / (1024.0*1024.0), " Mb queued");
 
@@ -1175,7 +1175,7 @@ public:
         error.resource = ui_.desc;
         try
         {
-            if (act->has_exception())
+            if (act->HasException())
                 act->rethrow();
 
             std::vector<std::unique_ptr<ThreadTask>> actions;
@@ -1316,7 +1316,7 @@ private:
     {
         if (!a) return;
 
-        a->set_owner(ui_.task_id);
+        a->SetOwnerId(ui_.task_id);
 
         num_active_actions_++;
         num_bytes_queued_ += a->size();
@@ -2395,7 +2395,7 @@ bool Engine::Pump()
 
         action->run_completion_callbacks();
 
-        const auto id = action->get_owner();
+        const auto id = action->GetOwnerId();
         auto it = std::find_if(std::begin(state_->conns), std::end(state_->conns),
             [&](const std::unique_ptr<ConnState>& c) {
                 return c->id() == id;

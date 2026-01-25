@@ -31,42 +31,40 @@
 
 namespace newsflash
 {
-    // action class encapsulates a single state transition
-    // when the action completes successfully and is returned
-    // to the originating object the object is expected to complete
-    // a state transition to another state succesfully.
+    // Work to be done in some thread where the thread could
+    // be the application main (GUI) thread or some worker thread.
     class ThreadTask
     {
     public:
-        enum class affinity {
-            gui_thread,
+        enum class Affinity {
+            GuiThread,
 
-            // dispatch the action to any available thread
-            // this means that multiple actions from the same originating
+            // dispatch the task to any available thread
+            // this means that multiple tasks from the same originating
             // object may complete in any order.
-            any_thread,
+            AnyThread,
 
-            // dispatch the action to a single thread with affinity to the
-            // action id. this means that all actions with single_thread
-            // affinity and with the same id will execute in the same thread.
-            single_thread
+            // dispatch the task to a single thread with fixed affinity based
+            // on the owner ID. this means that all tasks with SingleThread
+            // affinity and with the owner ID will execute in the same thread.
+            SingleThread
         };
 
         virtual ~ThreadTask() = default;
 
-        ThreadTask(affinity a = affinity::any_thread) : owner_(0), affinity_(a)
+        explicit ThreadTask(Affinity a = Affinity::AnyThread) : owner_(0), affinity_(a)
         {
             static std::atomic<std::size_t> id(1);
             id_ = id++;
         }
 
-        // return wheather an exception happened in perform()
-        bool has_exception() const
+        // Return whether an exception happened in perform()
+        bool HasException() const noexcept
         {
             return exptr_ != std::exception_ptr();
         }
 
-        // if theres a captured exception throw it
+        // Rethrow the captured exception (if any)
         void rethrow() const
         {
             if (exptr_)
@@ -74,12 +72,12 @@ namespace newsflash
         }
 
         // perform the action
-        void perform()
+        void PerformTask()
         {
             Logger* prev = SetThreadLog(logger_.get());
             try
             {
-                xperform();
+                DoWork();
             }
             catch (const std::exception& e)
             {
@@ -99,36 +97,37 @@ namespace newsflash
         virtual void run_completion_callbacks()
         {}
 
-        virtual std::string describe() const
+        // Get the human-readable description of the task.
+        virtual std::string Describe() const
         { return {}; }
 
         virtual std::size_t size() const
         { return 0; }
 
-        affinity get_affinity() const
+        Affinity GetAffinity() const
         { return affinity_; }
 
         // get action object id.
-        std::size_t get_owner() const
+        std::size_t GetOwnerId() const
         { return owner_; }
 
-        std::size_t get_id() const
+        std::size_t GetTaskId() const
         { return id_; }
 
         // set the owner id of the action.
-        void set_owner(std::size_t id)
+        void SetOwnerId(std::size_t id)
         { owner_ = id;}
 
         // set the thread affinity.
-        void set_affinity(affinity aff)
+        void SetAffinity(Affinity aff)
         { affinity_ = aff; }
 
         // set the logger object to be used for this action.
-        void set_log(std::shared_ptr<Logger> out)
-        { logger_ = out; }
+        void SetLogger(std::shared_ptr<Logger> out)
+        { logger_ = std::move(out); }
 
     protected:
-        virtual void xperform() = 0;
+        virtual void DoWork() = 0;
 
     private:
         std::exception_ptr exptr_;
@@ -136,7 +135,7 @@ namespace newsflash
         std::size_t id_    = 0;
         std::shared_ptr<Logger> logger_;
     private:
-        affinity affinity_ = affinity::any_thread;
+        Affinity affinity_ = Affinity::AnyThread;
     };
 
 } // newsflash

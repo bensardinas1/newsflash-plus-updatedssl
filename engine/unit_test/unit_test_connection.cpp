@@ -69,8 +69,8 @@ void test_connect()
         nf::ConnectionImpl conn;
 
         act = conn.Connect(s);
-        act->set_log(log);
-        act->perform();
+        act->SetLogger(log);
+        act->PerformTask();
         BOOST_REQUIRE(conn.GetState() == nf::Connection::State::Resolving);
         act = conn.Complete(std::move(act));
         BOOST_REQUIRE(conn.GetState() == nf::Connection::State::Error);
@@ -88,15 +88,15 @@ void test_connect()
 
         // resolve
         act = conn.Connect(s);
-        act->set_log(log);
-        act->perform();
+        act->SetLogger(log);
+        act->PerformTask();
 
         // Connect
         act = conn.Complete(std::move(act));
         BOOST_REQUIRE(conn.GetState() == nf::Connection::State::Connecting);
         BOOST_REQUIRE(conn.GetError() == nf::Connection::Error::None);
-        act->set_log(log);
-        act->perform();
+        act->SetLogger(log);
+        act->PerformTask();
 
         // initialize
         act = conn.Complete(std::move(act));
@@ -116,18 +116,18 @@ void test_connect()
 
         // resolve
         act = conn.Connect(s);
-        act->set_log(log);
-        act->perform(); // resolve
+        act->SetLogger(log);
+        act->PerformTask(); // resolve
         act = conn.Complete(std::move(act));
 
         // Connect
-        act->set_log(log);
-        act->perform(); // Connect
+        act->SetLogger(log);
+        act->PerformTask(); // Connect
         act = conn.Complete(std::move(act));
 
         // initialize
-        act->set_log(log);
-        act->perform();
+        act->SetLogger(log);
+        act->PerformTask();
         BOOST_REQUIRE(conn.GetState() == nf::Connection::State::Initializing);
         BOOST_REQUIRE(conn.GetError() == nf::Connection::Error::None);
 
@@ -151,18 +151,18 @@ void test_connect()
 
         // resolve
         act = conn.Connect(s);
-        act->set_log(log);
-        act->perform();
+        act->SetLogger(log);
+        act->PerformTask();
         act = conn.Complete(std::move(act));
 
         // Connect
-        act->set_log(log);
-        act->perform();
+        act->SetLogger(log);
+        act->PerformTask();
         act = conn.Complete(std::move(act));
 
         // initialize
-        act->set_log(log);
-        act->perform();
+        act->SetLogger(log);
+        act->PerformTask();
         BOOST_REQUIRE(conn.GetState() == nf::Connection::State::Initializing);
         BOOST_REQUIRE(conn.GetError() == nf::Connection::Error::None);
 
@@ -192,18 +192,18 @@ void test_connect()
 
         // resolve
         act = conn.Connect(s);
-        act->set_log(log);
-        act->perform();
+        act->SetLogger(log);
+        act->PerformTask();
         act = conn.Complete(std::move(act)); // resolve
 
         // Connect
-        act->set_log(log);
-        act->perform();
+        act->SetLogger(log);
+        act->PerformTask();
         act = conn.Complete(std::move(act));
 
         // initialize
-        act->set_log(log);
-        act->perform();
+        act->SetLogger(log);
+        act->PerformTask();
         act = conn.Complete(std::move(act));
         BOOST_REQUIRE(conn.GetState() == nf::Connection::State::Connected);
         BOOST_REQUIRE(conn.GetError() == nf::Connection::Error::None);
@@ -225,24 +225,24 @@ void test_connect()
 
         // resolve
         act = conn.Connect(s);
-        act->set_log(log);
-        act->perform();
+        act->SetLogger(log);
+        act->PerformTask();
         act = conn.Complete(std::move(act));
 
         // Connect
-        act->set_log(log);
-        act->perform();
+        act->SetLogger(log);
+        act->PerformTask();
         act = conn.Complete(std::move(act));
 
         // initialize
-        act->set_log(log);
-        act->perform();
+        act->SetLogger(log);
+        act->PerformTask();
         act = conn.Complete(std::move(act));
 
         // disconnect
         act = conn.Disconnect();
-        act->set_log(log);
-        act->perform();
+        act->SetLogger(log);
+        act->PerformTask();
         act = conn.Complete(std::move(act));
         BOOST_REQUIRE(conn.GetState() == nf::Connection::State::Disconnected);
         BOOST_REQUIRE(conn.GetError() == nf::Connection::Error::None);
@@ -264,17 +264,17 @@ void test_connect()
 
         // resolve.
         act = conn->Connect(s);
-        act->set_log(log);
-        act->perform();
+        act->SetLogger(log);
+        act->PerformTask();
         act = conn->Complete(std::move(act));
 
-        act->set_log(log);
+        act->SetLogger(log);
         // for the Connect action,
         // spawn a new thread that executes the action the background
         // meanwhile the main thread destroys the object.
         std::thread thread([&]() {
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
-            act->perform();
+            act->PerformTask();
         });
 
         conn.reset();
@@ -311,18 +311,18 @@ void test_execute_success()
 
     // resolve
     act = conn.Connect(s);
-    act->set_log(log);
-    act->perform();
+    act->SetLogger(log);
+    act->PerformTask();
 
     // Connect
     act = conn.Complete(std::move(act));
-    act->set_log(log);
-    act->perform();
+    act->SetLogger(log);
+    act->PerformTask();
 
     // initialize
     act = conn.Complete(std::move(act));
-    act->set_log(log);
-    act->perform();
+    act->SetLogger(log);
+    act->PerformTask();
 
     // successful body retrieval
     {
@@ -335,7 +335,7 @@ void test_execute_success()
         // execute
         act = conn.Execute(cmds);
         BOOST_REQUIRE(conn.GetState() == nf::Connection::State::Active);
-        act->perform();
+        act->PerformTask();
         act->run_completion_callbacks();
         act = conn.Complete(std::move(act));
         BOOST_REQUIRE(conn.GetState() == nf::Connection::State::Connected);
@@ -361,7 +361,7 @@ void test_execute_success()
         auto cmds = std::make_shared<nf::CmdList>(m);
 
         act = conn.Execute(cmds);
-        act->perform();
+        act->PerformTask();
         act->run_completion_callbacks();
         act = conn.Complete(std::move(act));
         BOOST_REQUIRE(conn.GetState() == nf::Connection::State::Connected);
@@ -407,18 +407,18 @@ void test_execute_failure()
 
         // resolve
         act = conn.Connect(s);
-        act->set_log(log);
-        act->perform();
+        act->SetLogger(log);
+        act->PerformTask();
 
         // Connect
         act = conn.Complete(std::move(act));
-        act->set_log(log);
-        act->perform();
+        act->SetLogger(log);
+        act->PerformTask();
 
         // initialize
         act = conn.Complete(std::move(act));
-        act->set_log(log);
-        act->perform();
+        act->SetLogger(log);
+        act->PerformTask();
 
         nf::CmdList::Messages m;
         m.groups  = {"alt.binaries.foo"};
@@ -428,7 +428,7 @@ void test_execute_failure()
         // execute
         act = conn.Execute(cmds);
         BOOST_REQUIRE(conn.GetState() == nf::Connection::State::Active);
-        act->perform();
+        act->PerformTask();
         act->run_completion_callbacks();
         act = conn.Complete(std::move(act));
         BOOST_REQUIRE(conn.GetState() == nf::Connection::State::Error);

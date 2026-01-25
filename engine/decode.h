@@ -68,7 +68,7 @@ namespace newsflash
         DecodeJob(const Buffer& data);
         DecodeJob(Buffer&& data);
 
-        virtual std::string describe() const override;
+        virtual std::string Describe() const override;
 
         // get text content buffer (if any)
 
@@ -128,7 +128,7 @@ namespace newsflash
         { return flags_.test(Flags::HasOffset); }
 
     private:
-        virtual void xperform() override;
+        virtual void DoWork() override;
         std::size_t decode_yenc_single(const char* data, std::size_t len);
         std::size_t decode_yenc_multi(const char* data, std::size_t len);
         std::size_t decode_uuencode_single(const char* data, std::size_t len);

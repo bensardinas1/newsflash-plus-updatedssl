@@ -103,7 +103,7 @@ void unit_test_discard()
         threads.SetCallback(
             [&](nf::ThreadTask* a)
             {
-                BOOST_REQUIRE(a->has_exception() == false);
+                BOOST_REQUIRE(a->HasException() == false);
                 delete a;
             });
 

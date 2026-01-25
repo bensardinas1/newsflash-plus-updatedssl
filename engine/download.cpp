@@ -119,7 +119,7 @@ void Download::Commit()
             if (!p) continue;
 
             std::unique_ptr<ThreadTask> write = file->Write(0, std::move(*p), callback_);
-            write->perform();
+            write->PerformTask();
             p.reset();
         }
         stash_.clear();
@@ -264,8 +264,8 @@ void Download::Complete(CmdList& cmd, std::vector<std::unique_ptr<ThreadTask>>& 
     // in any order to the file.
     const bool yenc = name_.find("yEnc") != std::string::npos;
     const auto affinity = yenc ?
-        ThreadTask::affinity::any_thread :
-        ThreadTask::affinity::single_thread;
+        ThreadTask::Affinity::AnyThread :
+        ThreadTask::Affinity::SingleThread;
 
     for (std::size_t i=0; i<cmd.NumBuffers(); ++i)
     {
@@ -278,7 +278,7 @@ void Download::Complete(CmdList& cmd, std::vector<std::unique_ptr<ThreadTask>>& 
         if (status == Buffer::Status::Success)
         {
             std::unique_ptr<DecodeJob> dec(new DecodeJob(std::move(buffer)));
-            dec->set_affinity(affinity);
+            dec->SetAffinity(affinity);
             next.push_back(std::move(dec));
         }
         else if (status == Buffer::Status::None)

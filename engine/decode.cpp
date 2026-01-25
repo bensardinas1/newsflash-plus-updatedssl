@@ -61,12 +61,12 @@ DecodeJob::DecodeJob(const Buffer& data) : data_(data)
 DecodeJob::DecodeJob(Buffer&& data) : data_(std::move(data))
 {}
 
-std::string DecodeJob::describe() const
+std::string DecodeJob::Describe() const
 {
     return "DecodeJob";
 }
 
-void DecodeJob::xperform()
+void DecodeJob::DoWork()
 {
     // iterate over the content line by line and inspect
     // every line untill we can identify a binary encoding.

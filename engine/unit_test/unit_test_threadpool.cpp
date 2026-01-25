@@ -49,7 +49,7 @@ void unit_test_pool()
         action(std::atomic_int& c) : counter_(c)
         {}
 
-        virtual void xperform()
+        void DoWork() override
         {
             counter_++;
         }
@@ -66,8 +66,8 @@ void unit_test_pool()
     for (int i=0; i<10000; ++i)
     {
         auto* a = new action(counter);
-        a->set_affinity(newsflash::ThreadTask::affinity::any_thread);
-        a->set_owner(i);
+        a->SetAffinity(newsflash::ThreadTask::Affinity::AnyThread);
+        a->SetOwnerId(i);
         threads.Submit(a);
     }
     threads.WaitAllActions();
@@ -87,7 +87,7 @@ void unit_test_private_thread()
         generic_counter_action(std::atomic_int& c) : counter_(c)
         {}
 
-        virtual void xperform()
+        void DoWork() override
         {
             counter_++;
         }
@@ -101,7 +101,7 @@ void unit_test_private_thread()
         private_counter_action(std::atomic_int& c) : counter_(c)
         {}
 
-        virtual void xperform()
+        void DoWork() override
         {
             static auto id = std::this_thread::get_id();
             BOOST_REQUIRE(id == std::this_thread::get_id());
@@ -124,8 +124,8 @@ void unit_test_private_thread()
     for (int i=0; i<10000; ++i)
     {
         auto* a = new generic_counter_action(generic_counter);
-        a->set_affinity(newsflash::ThreadTask::affinity::any_thread);
-        a->set_owner(i);
+        a->SetAffinity(newsflash::ThreadTask::Affinity::AnyThread);
+        a->SetOwnerId(i);
         threads.Submit(a);
 
         auto* b = new private_counter_action(private_counter);
@@ -147,7 +147,7 @@ void unit_test_main_thread()
         action(std::atomic_int& c) : counter_(c)
         {}
 
-        virtual void xperform()
+        void DoWork() override
         {
             counter_++;
         }
@@ -167,8 +167,8 @@ void unit_test_main_thread()
     for (int i=0; i<10000; ++i)
     {
         auto* a = new action(counter);
-        a->set_affinity(newsflash::ThreadTask::affinity::any_thread);
-        a->set_owner(i);
+        a->SetAffinity(newsflash::ThreadTask::Affinity::AnyThread);
+        a->SetOwnerId(i);
         threads.Submit(a);
         threads.RunMainThreads();
     }
