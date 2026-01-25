@@ -173,7 +173,7 @@ std::size_t DecodeContentTask::decode_yenc_single(const char* data, std::size_t 
     nntp::bodyiter beg(data, len);
     nntp::bodyiter end(data + len, 0);
 
-    const auto header = yenc::parse_header(beg, end);
+    const auto header = yenc::ParseHeader(beg, end);
     if (!header.first)
     {
         LOG_E("Broken or missing yEnc header: " + ReadFirstLine(data, len));
@@ -182,9 +182,9 @@ std::size_t DecodeContentTask::decode_yenc_single(const char* data, std::size_t 
 
     std::vector<char> buff;
     buff.reserve(header.second.size);
-    yenc::decode(beg, end, std::back_inserter(buff));
+    yenc::Decode(beg, end, std::back_inserter(buff));
 
-    const auto footer = yenc::parse_footer(beg, end);
+    const auto footer = yenc::ParseFooter(beg, end);
     if (!footer.first)
     {
         // todo: LOG_E
@@ -221,14 +221,14 @@ std::size_t DecodeContentTask::decode_yenc_multi(const char* data, std::size_t l
     nntp::bodyiter beg(data, len);
     nntp::bodyiter end(data + len, 0);
 
-    const auto header = yenc::parse_header(beg, end);
+    const auto header = yenc::ParseHeader(beg, end);
     if (!header.first)
     {
         LOG_E("Broken or missing yEnc multi-part header: " + ReadFirstLine(data, len));
         throw Exception("broken or missing yEnc multi-part header");
     }
 
-    const auto part = yenc::parse_part(beg, end);
+    const auto part = yenc::ParsePart(beg, end);
     if (!part.first)
     {
         // todo: LOG_E the current line.
@@ -241,9 +241,9 @@ std::size_t DecodeContentTask::decode_yenc_multi(const char* data, std::size_t l
 
     std::vector<char> buff;
     buff.reserve(size);
-    yenc::decode(beg, end, std::back_inserter(buff));
+    yenc::Decode(beg, end, std::back_inserter(buff));
 
-    const auto footer = yenc::parse_footer(beg, end);
+    const auto footer = yenc::ParseFooter(beg, end);
     if (!footer.first)
         throw Exception("broken or missing yenc footer");
 

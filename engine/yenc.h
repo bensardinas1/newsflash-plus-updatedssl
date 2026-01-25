@@ -25,8 +25,10 @@
 #include <newsflash/warnpush.h>
 #  include <boost/spirit/include/classic.hpp>
 #include <newsflash/warnpop.h>
+
 #include <string>
 #include <iterator>
+#include <cstdint>
 
 // yEnc decoder/encoder implementation.
 // http://www.yenc.org/
@@ -36,50 +38,52 @@ namespace yenc
     // yEnc header precedes the yEnc encoded data.
     // In case of a multipart data the part field will 
     // be present and have a non-zero value after successful parsing.
-    struct header {
-        size_t part;            // the number of the part when the yenc content is a part of a multipart binary. (not available in single part binaries)
-        size_t line;            // typical line length.
-        size_t size;            // the size of the original binary (in bytes)
-        size_t total;           // the total number of parts in a multipart binary. (only available in yEnc 1.2)
+    struct Header {
+        uint64_t part = 0;            // the number of the part when the yenc content is a part of a multipart binary. (not available in single part binaries)
+        uint64_t line = 0;            // typical line length.
+        uint64_t size = 0;            // the size of the original binary (in bytes)
+        uint64_t total = 0;           // the total number of parts in a multipart binary. (only available in yEnc 1.2)
         std::string name;       // the filename of the encoded binary
     };
 
     // yEnc part header. 
     // ypart specifies the starting and ending points (in bytes) of the block
     // in the original file    
-    struct part {
-        size_t begin; // starting point
-        size_t end;   // ending point
+    struct PartHeader {
+        uint64_t begin = 0; // starting point
+        uint64_t end = 0;   // ending point
     };
 
     // yEnd end line follows the yEnc encoded data.
     // In case of a multipart data the part field will
-    // be present and have a non-zero value after succesful parsing. 
-    struct footer {
-        size_t size;
-        size_t part; 
-        size_t crc32;
-        size_t pcrc32;
+    // be present and have a non-zero value after successful parsing.
+    struct Footer {
+        uint64_t size = 0;
+        uint64_t part = 0;
+        uint32_t crc32 = 0;
+        uint32_t pcrc32 = 0;
     };
     
 
-    // parse yEnc header. returns {true, header} if succesful, otherwise {false, header} and
+    // parse yEnc header. returns {true, header} if successful, otherwise {false, header} and
     // contents of header are unspecified.
     template<typename InputIterator>
-    std::pair<bool, header> parse_header(InputIterator& beg, InputIterator end)
+    std::pair<bool, Header> ParseHeader(InputIterator& beg, InputIterator end)
     {
         using namespace boost::spirit::classic;
         
-        yenc::header header {0, 0, 0, 0, ""};
+        Header header;
 
-        chset<> name_p(chset<>(anychar_p) - '\r' - '\n');
+        const uint_parser<uint64_t> uint64_p  = uint_parser<uint64_t>();
+        const chset<> name_p(chset<>(anychar_p) - '\r' - '\n');
+
         const auto ret = parse(beg, end,
            (
             str_p("=ybegin") >>
             !(str_p("part=")  >> uint_p[assign(header.part)])    >> // not included in single part headers
             !(str_p("total=") >> uint_p[assign(header.total)])   >> // only in yEnc 1.2
-            ((str_p("line=")  >> uint_p[assign(header.line)]) | (str_p("size=")  >> uint_p[assign(header.size)])) >>
-            ((str_p("line=")  >> uint_p[assign(header.line)]) | (str_p("size=")  >> uint_p[assign(header.size)])) >>
+            ((str_p("line=")  >> uint_p[assign(header.line)]) | (str_p("size=")  >> uint64_p[assign(header.size)])) >>
+            ((str_p("line=")  >> uint_p[assign(header.line)]) | (str_p("size=")  >> uint64_p[assign(header.size)])) >>
             (str_p("name=")  >> (*name_p)[assign(header.name)])   >>
             !eol_p
             ), ch_p(' '));
@@ -89,20 +93,22 @@ namespace yenc
         return {ret.hit, header};
     }
 
-    // parse yEnc part. returns { true, part } if succesful, otherwise { false, part  } and
+    // parse yEnc part. returns { true, part } if successful, otherwise { false, part  } and
     // the contents of the part are unspecified.
     template<typename InputIterator>
-    std::pair<bool, part> parse_part(InputIterator& beg, InputIterator end)
+    std::pair<bool, PartHeader> ParsePart(InputIterator& beg, InputIterator end)
     {
         using namespace boost::spirit::classic;
 
-        yenc::part part {0, 0};
+        PartHeader part;
+
+        const uint_parser<uint64_t> uint64_p  = uint_parser<uint64_t>();
 
         const auto ret = parse(beg, end, 
           (
            str_p("=ypart")  >>
-           (str_p("begin=") >> uint_p[assign(part.begin)]) >>
-           (str_p("end=")   >> uint_p[assign(part.end)]) >>
+           (str_p("begin=") >> uint64_p[assign(part.begin)]) >>
+           (str_p("end=")   >> uint64_p[assign(part.end)]) >>
            !eol_p
            ), ch_p(' '));
 
@@ -113,17 +119,19 @@ namespace yenc
 
 
     template<typename InputIterator>
-    std::pair<bool, yenc::footer> parse_footer(InputIterator& beg, InputIterator end)
+    std::pair<bool, Footer> ParseFooter(InputIterator& beg, InputIterator end)
     {
         using namespace boost::spirit::classic;
         
-        yenc::footer footer {0, 0, 0, 0};
+        Footer footer;
+
+        const uint_parser<uint64_t> uint64_p  = uint_parser<uint64_t>();
 
         const auto ret = parse(beg, end, 
           (                                                
            str_p("=yend") >>
-           (str_p("size=") >> uint_p[assign(footer.size)]) >>
-           !(str_p("part=") >> uint_p[assign(footer.part)]) >>
+           (str_p("size=") >> uint64_p[assign(footer.size)]) >>
+           !(str_p("part=") >> uint64_p[assign(footer.part)]) >>
            !(str_p("pcrc32=") >> hex_p[assign(footer.pcrc32)]) >>
            !(str_p("crc32=") >> hex_p[assign(footer.crc32)]) >> 
            !eol_p
@@ -136,7 +144,7 @@ namespace yenc
 
     // Decode yEnc encoded data back into its original binary representation.
     template<typename InputIterator, typename OutputIterator>
-    bool decode(InputIterator& beg, InputIterator end, OutputIterator dest)
+    bool Decode(InputIterator& beg, InputIterator end, OutputIterator dest)
     {
         // todo: some error checking perhaps?
         while (beg != end)
@@ -173,7 +181,7 @@ namespace yenc
     // Encode data into yEnc. Line should be the preferred
     // line length after wich a new line (\r\n) is written into the output stream.
     template<typename InputIterator, typename OutputIterator>
-    void encode(InputIterator beg, InputIterator end, OutputIterator dest, const int line = 128, bool double_dots = false)
+    void Encode(InputIterator beg, InputIterator end, OutputIterator dest, const int line = 128, bool double_dots = false)
     {
         int output = 0;
         while (beg != end)

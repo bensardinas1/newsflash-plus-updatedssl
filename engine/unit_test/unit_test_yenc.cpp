@@ -35,9 +35,17 @@
 void test_parsing()
 {
     {
+        const char* str = "=ybegin part=41 total=10865 line=128 size=7787866737 name=bc4a15d34c5e34ca54e9a385a97de5d8fb0173d3ca636d9ad3fde7b3fbab";
+
+        const auto& ret = yenc::ParseHeader(str, str+strlen(str));
+        BOOST_REQUIRE(ret.first == true);
+
+    }
+
+    {
         const char* str = "=ybegin part=1 line=128 size=824992 name=Black Sabbath 1970 - 1998.vol000+01.PAR2";
 
-        const auto& ret = yenc::parse_header(str, str+strlen(str));
+        const auto& ret = yenc::ParseHeader(str, str+strlen(str));
 
         BOOST_REQUIRE(ret.first == true);
         BOOST_REQUIRE(ret.second.part == 1);
@@ -51,7 +59,7 @@ void test_parsing()
 
         auto beg = str.begin();
 
-        const auto& ret = yenc::parse_header(beg, str.end());
+        const auto& ret = yenc::ParseHeader(beg, str.end());
 
         BOOST_REQUIRE(ret.first == true);
         BOOST_REQUIRE(ret.second.part == 1);
@@ -65,7 +73,7 @@ void test_parsing()
 
         const char* str = "=ybegin line=128 size=824992 name=Black Sabbath 1970 - 1998.vol000+01.PAR2";
 
-        const auto& ret = yenc::parse_header(str, str+strlen(str));
+        const auto& ret = yenc::ParseHeader(str, str+strlen(str));
 
         BOOST_REQUIRE(ret.first == true);
         BOOST_REQUIRE(ret.second.part == 0);
@@ -77,7 +85,7 @@ void test_parsing()
     {
         const char* str = "=yend size=16154 crc32=4a68571d";
 
-        const auto& ret = yenc::parse_footer(str, str+strlen(str));
+        const auto& ret = yenc::ParseFooter(str, str+strlen(str));
 
         BOOST_REQUIRE(ret.first == true);
         BOOST_REQUIRE(ret.second.size == 16154);
@@ -91,7 +99,7 @@ void test_parsing()
         // single part yend
         const char* str = "=yend size=16154";
 
-        const auto& ret = yenc::parse_footer(str, str+strlen(str));
+        const auto& ret = yenc::ParseFooter(str, str+strlen(str));
 
         BOOST_REQUIRE(ret.first == true);
         BOOST_REQUIRE(ret.second.size == 16154);
@@ -105,7 +113,7 @@ void test_parsing()
         // multipart end
         const char* str = "=yend size=16154 pcrc32=4a68571d";
 
-        const auto& ret = yenc::parse_footer(str, str+strlen(str));
+        const auto& ret = yenc::ParseFooter(str, str+strlen(str));
 
         BOOST_REQUIRE(ret.first == true);
         BOOST_REQUIRE(ret.second.size == 16154);
@@ -120,7 +128,7 @@ void test_parsing()
         const char* str = "=ybegin part=1 line=128 size=824992 name=foobar.PAR2\r\n" \
                           "=ypart begin=12345 end=54321\r\n";
 
-        const auto& header = yenc::parse_header(str, str+strlen(str));
+        const auto& header = yenc::ParseHeader(str, str+strlen(str));
         BOOST_REQUIRE(header.first == true);
         BOOST_REQUIRE(header.second.part == 1);
         BOOST_REQUIRE(header.second.line == 128);
@@ -128,7 +136,7 @@ void test_parsing()
         BOOST_REQUIRE(header.second.name == "foobar.PAR2");
         BOOST_REQUIRE(header.second.total == 0);
 
-        const auto& part = yenc::parse_part(str, str+strlen(str));
+        const auto& part = yenc::ParsePart(str, str+strlen(str));
         BOOST_REQUIRE(part.first == true);
         BOOST_REQUIRE(part.second.begin == 12345);
         BOOST_REQUIRE(part.second.end   == 54321);
@@ -138,7 +146,7 @@ void test_parsing()
     {
         const char* str = "=ypart begin=123 end=100\r\n\vfoo";
 
-        const auto& part = yenc::parse_part(str, str+strlen(str));
+        const auto& part = yenc::ParsePart(str, str+strlen(str));
 
         BOOST_REQUIRE(part.first == true);
         BOOST_REQUIRE(*str == '\v');
@@ -148,7 +156,7 @@ void test_parsing()
     {
         const char* str = "=ypart begin=123 end=100\r\n foo";
 
-        const auto& part = yenc::parse_part(str, str+strlen(str));
+        const auto& part = yenc::ParsePart(str, str+strlen(str));
 
         BOOST_REQUIRE(part.first == true);
         BOOST_REQUIRE(*str == ' ');
@@ -161,7 +169,7 @@ void test_parsing()
                           "eBook - Must have für alle Handy Fans - 2007 German.part08.rar\r\n"\
                           "=ypart begin=1 end=384000";
 
-        const auto& header = yenc::parse_header(str, str+strlen(str));
+        const auto& header = yenc::ParseHeader(str, str+strlen(str));
 
         BOOST_REQUIRE(header.first == true);
         BOOST_REQUIRE(header.second.part == 1);
@@ -170,7 +178,7 @@ void test_parsing()
         BOOST_REQUIRE(header.second.total == 0);
         BOOST_REQUIRE(header.second.name == "Nokia Smartphone Hacks - eBook - Must have für alle Handy Fans - 2007 German.part08.rar");
 
-        const auto& part = yenc::parse_part(str, str+strlen(str));
+        const auto& part = yenc::ParsePart(str, str+strlen(str));
         BOOST_REQUIRE(part.first == true);
         BOOST_REQUIRE(part.second.begin == 1);
         BOOST_REQUIRE(part.second.end == 384000);
@@ -182,7 +190,7 @@ void test_parsing()
 
         const char* str = "=ybegin part=1  total=4 size=1507728 line=128 name=(null)";
 
-        const auto& ret = yenc::parse_header(str, str+strlen(str));
+        const auto& ret = yenc::ParseHeader(str, str+strlen(str));
         BOOST_REQUIRE(ret.first == true);
         BOOST_REQUIRE(ret.second.part  == 1);
         BOOST_REQUIRE(ret.second.total == 4);
@@ -195,21 +203,21 @@ void test_parsing()
     {
         const char* str = "=ybegin asglasjasa part=123\r\n";
 
-        const auto& header = yenc::parse_header(str, str+strlen(str));
+        const auto& header = yenc::ParseHeader(str, str+strlen(str));
         BOOST_REQUIRE(header.first == false);
     }
 
     {
         const char* str = "=ypart begin=sljsdg";
 
-        const auto& part = yenc::parse_part(str, str+strlen(str));
+        const auto& part = yenc::ParsePart(str, str+strlen(str));
         BOOST_REQUIRE(part.first == false);
     }
 
     {
         const char* str = "=yend size=sss123sss\r\n";
 
-        const auto& end = yenc::parse_footer(str, str+strlen(str));
+        const auto& end = yenc::ParseFooter(str, str+strlen(str));
         BOOST_REQUIRE(end.first == false);
     }
 }
@@ -239,19 +247,19 @@ void test_decoding()
 
         auto it = temp.begin();
 
-        const auto& header = yenc::parse_header(it, temp.end());
+        const auto& header = yenc::ParseHeader(it, temp.end());
         BOOST_REQUIRE(header.first);
         BOOST_REQUIRE(header.second.part == 0);
         BOOST_REQUIRE(header.second.line == 128);
         BOOST_REQUIRE(header.second.name == "test.png");
 
         std::vector<char> data;
-        yenc::decode(it, temp.end(), std::back_inserter(data));
+        yenc::Decode(it, temp.end(), std::back_inserter(data));
 
         BOOST_REQUIRE(orig.size() == data.size());
         BOOST_REQUIRE(orig == data);
 
-        const auto& footer = yenc::parse_footer(it, temp.end());
+        const auto& footer = yenc::ParseFooter(it, temp.end());
         BOOST_REQUIRE(footer.first);
         BOOST_REQUIRE(footer.second.size == header.second.size);
     }
@@ -271,20 +279,20 @@ void test_decoding()
         std::copy(std::istreambuf_iterator<char>(ref), std::istreambuf_iterator<char>(), std::back_inserter(orig));
 
         auto it = temp.begin();
-        const auto& header = yenc::parse_header(it, temp.end());
+        const auto& header = yenc::ParseHeader(it, temp.end());
         BOOST_REQUIRE(header.first);
         BOOST_REQUIRE(header.second.part == 4);
         BOOST_REQUIRE(header.second.line == 128);
         BOOST_REQUIRE(header.second.size == 15000000);
         BOOST_REQUIRE(header.second.total == 20);
 
-        const auto& part = yenc::parse_part(it, temp.end());
+        const auto& part = yenc::ParsePart(it, temp.end());
         BOOST_REQUIRE(part.first);
         BOOST_REQUIRE(part.second.begin == 2304001);
         BOOST_REQUIRE(part.second.end == 3072000);
 
         std::vector<char> data;
-        yenc::decode(it, temp.end(), std::back_inserter(data));
+        yenc::Decode(it, temp.end(), std::back_inserter(data));
 
         BOOST_REQUIRE(orig.size() == data.size());
         BOOST_REQUIRE(orig == data);
@@ -310,20 +318,20 @@ void test_decoding()
         nntp::bodyiter beg(ptr, temp.size());
         nntp::bodyiter end(ptr + temp.size(), 0);
 
-        const auto& header = yenc::parse_header(beg, end);
+        const auto& header = yenc::ParseHeader(beg, end);
         BOOST_REQUIRE(header.first);
         BOOST_REQUIRE(header.second.part == 4);
         BOOST_REQUIRE(header.second.line == 128);
         BOOST_REQUIRE(header.second.size == 15000000);
         BOOST_REQUIRE(header.second.total == 20);
 
-        const auto& part = yenc::parse_part(beg, end);
+        const auto& part = yenc::ParsePart(beg, end);
         BOOST_REQUIRE(part.first);
         BOOST_REQUIRE(part.second.begin == 2304001);
         BOOST_REQUIRE(part.second.end == 3072000);
 
         std::vector<char> data;
-        yenc::decode(beg, end, std::back_inserter(data));
+        yenc::Decode(beg, end, std::back_inserter(data));
 
         BOOST_REQUIRE(orig.size() == data.size());
         BOOST_REQUIRE(orig == data);
@@ -361,7 +369,7 @@ void test_encoding()
         std::vector<char> yenc;
 
         std::copy(header.begin(), header.end(), std::back_inserter(yenc));
-        yenc::encode(png.begin(), png.end(), std::back_inserter(yenc));
+        yenc::Encode(png.begin(), png.end(), std::back_inserter(yenc));
         std::copy(trailer.begin(), trailer.end(), back_inserter(yenc));
 
         BOOST_REQUIRE(yenc.size() == data.size());
@@ -394,11 +402,11 @@ void test_decode_encode()
     std::vector<char> data;
 
     // encode...
-    yenc::encode(junk, junk+sizeof(junk), std::back_inserter(yenc));
+    yenc::Encode(junk, junk+sizeof(junk), std::back_inserter(yenc));
 
     // and decode back into binary
     auto it = yenc.begin();
-    yenc::decode(it, yenc.end(), std::back_inserter(data));
+    yenc::Decode(it, yenc.end(), std::back_inserter(data));
 
     BOOST_REQUIRE(data.size() == sizeof(junk));
     BOOST_REQUIRE(std::memcmp(&data[0], junk, sizeof(junk)) == 0);
@@ -419,7 +427,7 @@ void test_encode_special()
         };
 
         std::string yenc;
-        yenc::encode(std::begin(data), std::end(data), std::back_inserter(yenc), 128, true);
+        yenc::Encode(std::begin(data), std::end(data), std::back_inserter(yenc), 128, true);
         BOOST_REQUIRE(yenc == "..abba.");
     }
 }
