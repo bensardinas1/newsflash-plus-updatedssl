@@ -28,14 +28,14 @@
 #include <functional>
 #include <memory>
 
-#include "task.h"
+#include "engine_task.h"
 
 namespace newsflash
 {
     class Buffer;
 
     // produce a listing of available newsgroups
-    class Listing : public Task
+    class Listing : public EngineTask
     {
     public:
         struct NewsGroup {

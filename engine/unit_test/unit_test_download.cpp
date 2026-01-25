@@ -234,7 +234,7 @@ void unit_test_decode_from_files()
         articles.push_back(file);
     }
     nf::Download download({"alt.binaries.foo"}, articles, "", "test");
-    nf::Task::Settings settings;
+    nf::EngineTask::Settings settings;
     settings.discard_text_content = true;
     settings.overwrite_existing_files = true;
     download.Configure(settings);

@@ -37,7 +37,7 @@
 namespace newsflash
 {
     class Connection;
-    class Task;
+    class EngineTask;
     class Logger;
 
     class Engine
@@ -47,12 +47,12 @@ namespace newsflash
         {
         public:
             virtual ~Factory() = default;
-            virtual std::unique_ptr<Task> AllocateTask(const ui::FileDownload& file) = 0;
-            virtual std::unique_ptr<Task> AllocateTask(const ui::HeaderDownload& download) = 0;
-            virtual std::unique_ptr<Task> AllocateTask(const ui::GroupListDownload& list) = 0;
-            virtual std::unique_ptr<Task> AllocateTask(std::size_t type) = 0;
+            virtual std::unique_ptr<EngineTask> AllocateTask(const ui::FileDownload& file) = 0;
+            virtual std::unique_ptr<EngineTask> AllocateTask(const ui::HeaderDownload& download) = 0;
+            virtual std::unique_ptr<EngineTask> AllocateTask(const ui::GroupListDownload& list) = 0;
+            virtual std::unique_ptr<EngineTask> AllocateTask(std::size_t type) = 0;
             virtual std::unique_ptr<Connection> AllocateConnection(const ui::Account& acc) = 0;
-            virtual std::unique_ptr<ui::Result> MakeResult(const Task& task, const ui::TaskDesc& desc) const = 0;
+            virtual std::unique_ptr<ui::Result> MakeResult(const EngineTask& task, const ui::TaskDesc& desc) const = 0;
             virtual std::unique_ptr<Logger> AllocateEngineLogger() = 0;
             virtual std::unique_ptr<Logger> AllocateConnectionLogger() = 0;
         private:

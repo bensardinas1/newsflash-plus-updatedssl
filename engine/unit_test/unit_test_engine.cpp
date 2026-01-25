@@ -113,9 +113,9 @@ public:
         if (auto* job = dynamic_cast<DecodeJob*>(&act))
         {
             if (job->cmd_ == "<crc_mismatch>")
-                errors_.set(Task::Error::CrcMismatch, true);
+                errors_.set(EngineTask::Error::CrcMismatch, true);
             else if (job->cmd_ == "<SizeMismatch>")
-                errors_.set(Task::Error::SizeMismatch, true);
+                errors_.set(EngineTask::Error::SizeMismatch, true);
         }
     }
 
@@ -816,26 +816,26 @@ private:
 struct Factory : public Engine::Factory
 {
 
-    virtual std::unique_ptr<Task> AllocateTask(const ui::FileDownload& file) override
+    virtual std::unique_ptr<EngineTask> AllocateTask(const ui::FileDownload& file) override
     {
         auto* params = static_cast<TaskParams*>(file.user_data);
 
         return std::make_unique<TestFileTask>(file, *params);
     }
 
-    virtual std::unique_ptr<Task> AllocateTask(const ui::HeaderDownload& download) override
+    virtual std::unique_ptr<EngineTask> AllocateTask(const ui::HeaderDownload& download) override
     {
         auto* params = static_cast<TaskParams*>(download.user_data);
 
         return std::make_unique<TestHeadersTask>(*params);
     }
-    virtual std::unique_ptr<Task> AllocateTask(const ui::GroupListDownload& list) override
+    virtual std::unique_ptr<EngineTask> AllocateTask(const ui::GroupListDownload& list) override
     {
         auto* params = static_cast<TaskParams*>(list.user_data);
 
         return std::make_unique<TestListingTask>(*params);
     }
-    virtual std::unique_ptr<Task> AllocateTask(std::size_t type) override
+    virtual std::unique_ptr<EngineTask> AllocateTask(std::size_t type) override
     {
         BOOST_REQUIRE(type == 1);
 
@@ -847,7 +847,7 @@ struct Factory : public Engine::Factory
 
         return std::make_unique<TestConnection>(*params);
     }
-    virtual std::unique_ptr<ui::Result> MakeResult(const Task& task, const ui::TaskDesc& desc) const override
+    virtual std::unique_ptr<ui::Result> MakeResult(const EngineTask& task, const ui::TaskDesc& desc) const override
     {
         return nullptr;
     }

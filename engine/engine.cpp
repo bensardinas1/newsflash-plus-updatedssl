@@ -68,22 +68,22 @@ public:
     DefaultFactory(const std::string& logpath) : logpath_(logpath)
     {}
 
-    std::unique_ptr<Task> AllocateTask(const ui::FileDownload& file) override
+    std::unique_ptr<EngineTask> AllocateTask(const ui::FileDownload& file) override
     {
         return std::make_unique<Download>(file.groups, file.articles, file.path, file.desc,
             file.ignore_yenc_filename);
     }
 
-    std::unique_ptr<Task> AllocateTask(const ui::HeaderDownload& download) override
+    std::unique_ptr<EngineTask> AllocateTask(const ui::HeaderDownload& download) override
     {
         return std::make_unique<Update>(download.path, download.group);
     }
 
-    std::unique_ptr<Task> AllocateTask(const ui::GroupListDownload& list) override
+    std::unique_ptr<EngineTask> AllocateTask(const ui::GroupListDownload& list) override
     {
         return std::make_unique<Listing>();
     }
-    std::unique_ptr<Task> AllocateTask(std::size_t type) override
+    std::unique_ptr<EngineTask> AllocateTask(std::size_t type) override
     {
         // todo: fix this.
         ASSERT(type == 1);
@@ -95,7 +95,7 @@ public:
     {
         return std::make_unique<ConnectionImpl>();
     }
-    std::unique_ptr<ui::Result> MakeResult(const Task& task, const ui::TaskDesc& desc) const override
+    std::unique_ptr<ui::Result> MakeResult(const EngineTask& task, const ui::TaskDesc& desc) const override
     {
         std::unique_ptr<ui::Result> ret;
         if (const auto* ptr = dynamic_cast<const Download*>(&task))
@@ -888,7 +888,7 @@ public:
     //constexpr static auto no_transition = transition{states::queued, states::queued};
     const static transition no_transition;
 
-    TaskState(std::size_t id, std::unique_ptr<Task> task, const ui::Download& desc)
+    TaskState(std::size_t id, std::unique_ptr<EngineTask> task, const ui::Download& desc)
     {
         task_          = std::move(task);
         ui_.task_id    = id;
@@ -901,7 +901,7 @@ public:
         LOG_I("Task ", ui_.task_id, " (", ui_.desc, ") created");
     }
 
-    TaskState(std::unique_ptr<Task> task, const nlohmann::json& json)
+    TaskState(std::unique_ptr<EngineTask> task, const nlohmann::json& json)
     {
         const unsigned error_bits = json["error_bits"];
 
@@ -1000,7 +1000,7 @@ public:
         }
     }
 
-    void Configure(const Task::Settings& settings)
+    void Configure(const EngineTask::Settings& settings)
     {
         task_->Configure(settings);
     }
@@ -1183,9 +1183,9 @@ public:
             act.reset();
 
             const auto err = task_->GetErrors();
-            if (err.test(Task::Error::CrcMismatch))
+            if (err.test(EngineTask::Error::CrcMismatch))
                 ui_.error.set(ui::TaskDesc::Errors::Damaged);
-            if (err.test(Task::Error::SizeMismatch))
+            if (err.test(EngineTask::Error::SizeMismatch))
                 ui_.error.set(ui::TaskDesc::Errors::Damaged);
 
             for (auto& a : actions)
@@ -1439,7 +1439,7 @@ private:
 private:
     ui::TaskDesc ui_;
 private:
-    std::unique_ptr<newsflash::Task> task_;
+    std::unique_ptr<newsflash::EngineTask> task_;
     std::size_t num_active_actions_  = 0;
     std::size_t num_bytes_queued_    = 0;
     std::size_t num_files_produced_  = 0;
@@ -2295,7 +2295,7 @@ Engine::TaskId Engine::DownloadFiles(const ui::FileBatchDownload& batch, bool pr
     const auto batchid = state_->oid++;
     std::unique_ptr<BatchState> b(new BatchState(batchid, batch));
 
-    Task::Settings settings;
+    EngineTask::Settings settings;
     settings.discard_text_content     = state_->discard_text;
     settings.overwrite_existing_files = state_->overwrite_existing;
 
@@ -2305,7 +2305,7 @@ Engine::TaskId Engine::DownloadFiles(const ui::FileBatchDownload& batch, bool pr
 
         const auto taskid = state_->oid++;
 
-        std::unique_ptr<Task> task(state_->factory->AllocateTask(file));
+        std::unique_ptr<EngineTask> task(state_->factory->AllocateTask(file));
         if (auto* ptr = dynamic_cast<ContentTask*>(task.get()))
         {
             ptr->SetWriteCallback(std::bind(&Engine::State::on_write_done, state_.get(),
@@ -2336,7 +2336,7 @@ Engine::TaskId Engine::DownloadListing(const ui::GroupListDownload& list)
     std::unique_ptr<BatchState> batch(new BatchState(batchid, list));
 
     const auto taskid = state_->oid++;
-    std::unique_ptr<Task> task(state_->factory->AllocateTask(list));
+    std::unique_ptr<EngineTask> task(state_->factory->AllocateTask(list));
     if (auto* ptr = dynamic_cast<Listing*>(task.get()))
     {
         ptr->SetProgressCallback(std::bind(&Engine::State::on_listing_update_progress, state_.get(),
@@ -2360,7 +2360,7 @@ Engine::TaskId Engine::DownloadHeaders(const ui::HeaderDownload& download)
     std::unique_ptr<BatchState> batch(new BatchState(batchid, download));
 
     const auto taskid = state_->oid++;
-    std::unique_ptr<Task> task(state_->factory->AllocateTask(download));
+    std::unique_ptr<EngineTask> task(state_->factory->AllocateTask(download));
     if (auto* ptr = static_cast<HeaderTask*>(task.get()))
     {
         ptr->SetProgressCallback(std::bind(&Engine::State::on_header_update_progress, state_.get(),
@@ -2571,7 +2571,7 @@ void Engine::LoadTasks(const std::string& file)
                         (std::istreambuf_iterator<char>()));
     const auto& json = nlohmann::json::parse(content);
 
-    Task::Settings settings;
+    EngineTask::Settings settings;
     settings.discard_text_content = state_->discard_text;
     settings.overwrite_existing_files = state_->overwrite_existing;
 
@@ -2581,7 +2581,7 @@ void Engine::LoadTasks(const std::string& file)
         {
             const int type = json_p.value()["type"];
             const std::string& base64 = json_p.value()["data"];
-            std::unique_ptr<Task> task(state_->factory->AllocateTask(type));
+            std::unique_ptr<EngineTask> task(state_->factory->AllocateTask(type));
 
             const std::string& data = base64::Decode(base64);
             task->Load(data);
@@ -2705,7 +2705,7 @@ void Engine::SetOverwriteExistingFiles(bool on_off)
 {
     state_->overwrite_existing = on_off;
 
-    Task::Settings settings;
+    EngineTask::Settings settings;
     settings.overwrite_existing_files = on_off;
     settings.discard_text_content = state_->discard_text;
 
@@ -2717,7 +2717,7 @@ void Engine::SetDiscardTextContent(bool on_off)
 {
     state_->discard_text = on_off;
 
-    Task::Settings settings;
+    EngineTask::Settings settings;
     settings.discard_text_content = on_off;
     settings.overwrite_existing_files = state_->overwrite_existing;
 

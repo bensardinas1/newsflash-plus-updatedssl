@@ -87,7 +87,7 @@ Build par2cmdline
      $ sed -i 's/-g -O2/-O2/g' Makefile
      $ make
      $ cp par2 ~/coding/newsflash/dist
-     $ cp par2 ~/coding/newsflash/dist_d
+     $cp par2 ~/coding/newsflash/dist_d
 ```
 
 Build  unrar

@@ -28,13 +28,13 @@
 
 #include "bitflag.h"
 #include "datafile.h"
-#include "task.h"
+#include "engine_task.h"
 
 namespace newsflash
 {
     class DecodeJob;
 
-    class ContentTask : public Task
+    class ContentTask : public EngineTask
     {
     public:
         using WriteComplete = DataFile::WriteComplete;

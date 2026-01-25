@@ -36,7 +36,7 @@ namespace newsflash
 
     // tasks implement some nntp data based activity in the engine, for
     // example extracting binary content from article data.
-    class Task
+    class EngineTask
     {
     public:
         struct Settings {
@@ -58,7 +58,7 @@ namespace newsflash
             SizeMismatch
         };
 
-        virtual ~Task() = default;
+        virtual ~EngineTask() = default;
 
         // Create a command list object with details about
         // what data to read from the remote host.

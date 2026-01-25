@@ -144,9 +144,9 @@ void Download::Complete(action& act, std::vector<std::unique_ptr<action>>& next)
 
     const auto err = dec->GetErrors();
     if (err.test(DecodeJob::Error::CrcMismatch))
-        errors_.set(Task::Error::CrcMismatch);
+        errors_.set(EngineTask::Error::CrcMismatch);
     if (err.test(DecodeJob::Error::SizeMismatch))
-        errors_.set(Task::Error::SizeMismatch);
+        errors_.set(EngineTask::Error::SizeMismatch);
 
     auto binary = dec->GetBinaryDataMove(); //std::move(*dec).get_binary_data();
     auto text   = dec->GetTextDataMove(); //std::move(*dec).get_text_data();
@@ -311,7 +311,7 @@ float Download::GetProgress() const
     return float(num_actions_ready_) / float(num_actions_total_) * 100.0f;
 }
 
-bitflag<Task::Error> Download::GetErrors() const
+bitflag<EngineTask::Error> Download::GetErrors() const
 {
     return errors_;
 }

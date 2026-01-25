@@ -25,13 +25,14 @@
 #include <memory>
 #include <string>
 #include <cstdint>
-#include "task.h"
+
+#include "engine_task.h"
 
 namespace newsflash
 {
     struct Snapshot;
 
-    class HeaderTask : public Task
+    class HeaderTask : public EngineTask
     {
     public:
         struct Progress {
