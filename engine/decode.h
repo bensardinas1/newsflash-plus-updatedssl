@@ -26,7 +26,7 @@
 #include <string>
 #include <vector>
 
-#include "action.h"
+#include "thread_task.h"
 #include "buffer.h"
 #include "encoding.h"
 #include "bitflag.h"
@@ -35,7 +35,7 @@ namespace newsflash
 {
     // implement data decoding action. I.e. read input NNTP data and extract and decode it.
     // any ascii armored binary
-    class DecodeJob : public action
+    class DecodeJob : public ThreadTask
     {
     public:
         enum class Encoding {

@@ -33,7 +33,7 @@
 #include "download.h"
 #include "buffer.h"
 #include "filesys.h"
-#include "action.h"
+#include "thread_task.h"
 #include "bigfile.h"
 #include "bitflag.h"
 #include "decode.h"
@@ -118,7 +118,7 @@ void Download::Commit()
         {
             if (!p) continue;
 
-            std::unique_ptr<action> write = file->Write(0, std::move(*p), callback_);
+            std::unique_ptr<ThreadTask> write = file->Write(0, std::move(*p), callback_);
             write->perform();
             p.reset();
         }
@@ -132,7 +132,7 @@ void Download::Commit()
         f->Close();
 }
 
-void Download::Complete(action& act, std::vector<std::unique_ptr<action>>& next)
+void Download::Complete(ThreadTask& act, std::vector<std::unique_ptr<ThreadTask>>& next)
 {
     num_actions_ready_++;
 
@@ -172,7 +172,7 @@ void Download::Complete(action& act, std::vector<std::unique_ptr<action>>& next)
                 name = name_;
 
             std::shared_ptr<DataFile> file = create_file(name, size);
-            std::unique_ptr<action> write  = file->Write(offset, std::move(binary), callback_);
+            std::unique_ptr<ThreadTask> write  = file->Write(offset, std::move(binary), callback_);
             next.push_back(std::move(write));
         }
         else if (enc == DecodeJob::Encoding::UUEncode)
@@ -220,7 +220,7 @@ void Download::Complete(action& act, std::vector<std::unique_ptr<action>>& next)
             else
             {
                 std::shared_ptr<DataFile> file = create_file(name, 0);
-                std::unique_ptr<action> write  = file->Write(0, std::move(binary), callback_);
+                std::unique_ptr<ThreadTask> write  = file->Write(0, std::move(binary), callback_);
                 next.push_back(std::move(write));
             }
         }
@@ -247,12 +247,12 @@ void Download::Complete(action& act, std::vector<std::unique_ptr<action>>& next)
         }
         else file = *it;
 
-        std::unique_ptr<action> write = file->Write(0, std::move(text), callback_);
+        std::unique_ptr<ThreadTask> write = file->Write(0, std::move(text), callback_);
         next.push_back(std::move(write));
     }
 }
 
-void Download::Complete(CmdList& cmd, std::vector<std::unique_ptr<action>>& next)
+void Download::Complete(CmdList& cmd, std::vector<std::unique_ptr<ThreadTask>>& next)
 {
     // if the cmdlist has failed there won't be any content
     // we want to handle. all buffers have None statuses.
@@ -264,8 +264,8 @@ void Download::Complete(CmdList& cmd, std::vector<std::unique_ptr<action>>& next
     // in any order to the file.
     const bool yenc = name_.find("yEnc") != std::string::npos;
     const auto affinity = yenc ?
-        action::affinity::any_thread :
-        action::affinity::single_thread;
+        ThreadTask::affinity::any_thread :
+        ThreadTask::affinity::single_thread;
 
     for (std::size_t i=0; i<cmd.NumBuffers(); ++i)
     {

@@ -30,7 +30,7 @@
 
 namespace newsflash
 {
-    class action;
+    class ThreadTask;
 
     class ThreadPool
     {
@@ -43,7 +43,7 @@ namespace newsflash
 
         void AddMainThread(bool pooled, bool private_thread);
 
-        void Submit(std::unique_ptr<action> act)
+        void Submit(std::unique_ptr<ThreadTask> act)
         {
             Submit(act.get());
             act.release();
@@ -51,10 +51,10 @@ namespace newsflash
 
         // submit an action to the ThreadPool for any thread to execute specific
         // the thread affinity constraint set on the action.
-        void Submit(action* act);
+        void Submit(ThreadTask* act);
 
         // submit work to the specific thread
-        void Submit(action* act, Thread* thread);
+        void Submit(ThreadTask* act, Thread* thread);
 
         // wait for all actions to be completed before returning.
         void WaitAllActions();
@@ -74,7 +74,7 @@ namespace newsflash
         std::size_t GetNumPendingActions() const;
 
         // callback to be invoked when an action has been completed
-        using OnActionDone = std::function<void (action*)>;
+        using OnActionDone = std::function<void (ThreadTask*)>;
         void SetCallback(const OnActionDone& callback);
 
         void RunMainThreads();

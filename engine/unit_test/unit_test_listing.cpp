@@ -82,7 +82,7 @@ void unit_test_success()
 
     cmds->ReceiveDataBuffer(std::move(o));
 
-    std::vector<std::unique_ptr<newsflash::action>> actions;
+    std::vector<std::unique_ptr<newsflash::ThreadTask>> actions;
     listing.Complete(*cmds, actions);
 
     BOOST_REQUIRE(listing.HasCommands() == false);

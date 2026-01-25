@@ -29,7 +29,7 @@
 
 #include "assert.h"
 #include "bigfile.h"
-#include "action.h"
+#include "thread_task.h"
 #include "filesys.h"
 
 namespace newsflash
@@ -64,13 +64,13 @@ namespace newsflash
 
         using OnWriteDone = std::function<void (const WriteComplete&)>;
 
-        std::unique_ptr<action> Write(std::size_t offset, const std::vector<char>& data,
+        std::unique_ptr<ThreadTask> Write(std::size_t offset, const std::vector<char>& data,
             const OnWriteDone& callback = OnWriteDone())
         {
             // note that there's a little hack here and the offset is offset by +1
             // so that we're using 0 for indicating that offset is not being used at all.
             auto write = std::make_unique<WriteOp>(offset, data, impl_);
-            write->set_affinity(action::affinity::single_thread);
+            write->set_affinity(ThreadTask::affinity::single_thread);
             write->set_callback(callback);
             impl_->AddPendingWrite();
             return std::move(write);
@@ -233,7 +233,7 @@ namespace newsflash
             bigfile file_;
         };
 
-        class WriteOp : public action
+        class WriteOp : public ThreadTask
         {
         public:
             // note that there's a little hack here and the offset is offset by +1

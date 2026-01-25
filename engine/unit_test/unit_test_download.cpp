@@ -30,7 +30,7 @@
 
 #include "engine/datafile.h"
 #include "engine/download.h"
-#include "engine/action.h"
+#include "engine/thread_task.h"
 #include "engine/session.h"
 #include "engine/cmdlist.h"
 #include "unit_test_common.h"
@@ -110,8 +110,8 @@ void unit_test_decode_yenc()
     cmdlist->ReceiveDataBuffer(read_file_buffer("test_data/1489406.jpg-002.ync"));
     cmdlist->ReceiveDataBuffer(read_file_buffer("test_data/1489406.jpg-003.ync"));
 
-    std::vector<std::unique_ptr<nf::action>> actions1;
-    std::vector<std::unique_ptr<nf::action>> actions2;
+    std::vector<std::unique_ptr<nf::ThreadTask>> actions1;
+    std::vector<std::unique_ptr<nf::ThreadTask>> actions2;
     download.Complete(*cmdlist, actions1);
 
     while (!actions1.empty())
@@ -122,7 +122,7 @@ void unit_test_decode_yenc()
             download.Complete(*it, actions2);
         }
         actions1 = std::move(actions2);
-        actions2 = std::vector<std::unique_ptr<nf::action>>();
+        actions2 = std::vector<std::unique_ptr<nf::ThreadTask>>();
     }
 
     download.Commit();
@@ -149,8 +149,8 @@ void unit_test_decode_yenc_bug_32()
     cmdlist->ReceiveDataBuffer(read_file_buffer("test_data/wallpaper.jpg-002.yenc"));
     cmdlist->ReceiveDataBuffer(read_file_buffer("test_data/wallpaper.jpg-001.yenc"));
 
-    std::vector<std::unique_ptr<nf::action>> actions1;
-    std::vector<std::unique_ptr<nf::action>> actions2;
+    std::vector<std::unique_ptr<nf::ThreadTask>> actions1;
+    std::vector<std::unique_ptr<nf::ThreadTask>> actions2;
     download.Complete(*cmdlist, actions1);
 
     while (!actions1.empty())
@@ -161,7 +161,7 @@ void unit_test_decode_yenc_bug_32()
             download.Complete(*it, actions2);
         }
         actions1 = std::move(actions2);
-        actions2 = std::vector<std::unique_ptr<nf::action>>();
+        actions2 = std::vector<std::unique_ptr<nf::ThreadTask>>();
     }
 
     download.Commit();
@@ -188,8 +188,8 @@ void unit_test_decode_uuencode()
     cmdlist->ReceiveDataBuffer(read_file_buffer("test_data/1489406.jpg-001.uuencode"));
     cmdlist->ReceiveDataBuffer(read_file_buffer("test_data/1489406.jpg-002.uuencode"));
 
-    std::vector<std::unique_ptr<nf::action>> actions1;
-    std::vector<std::unique_ptr<nf::action>> actions2;
+    std::vector<std::unique_ptr<nf::ThreadTask>> actions1;
+    std::vector<std::unique_ptr<nf::ThreadTask>> actions2;
     download.Complete(*cmdlist, actions1);
 
     while (!actions1.empty())
@@ -200,7 +200,7 @@ void unit_test_decode_uuencode()
             download.Complete(*it, actions2);
         }
         actions1 = std::move(actions2);
-        actions2 = std::vector<std::unique_ptr<nf::action>>();
+        actions2 = std::vector<std::unique_ptr<nf::ThreadTask>>();
     }
 
     download.Commit();
@@ -251,12 +251,12 @@ void unit_test_decode_from_files()
             nf::Buffer buff = read_file_buffer(articles[i].c_str());
             cmds->ReceiveDataBuffer(std::move(buff));
         }
-        std::vector<std::unique_ptr<nf::action>> decodes;
+        std::vector<std::unique_ptr<nf::ThreadTask>> decodes;
         download.Complete(*cmds, decodes);
         for (auto& dec : decodes)
         {
             dec->perform();
-            std::vector<std::unique_ptr<nf::action>> writes;
+            std::vector<std::unique_ptr<nf::ThreadTask>> writes;
             download.Complete(*dec, writes);
             for (auto& io : writes)
                 io->perform();
@@ -319,8 +319,8 @@ void unit_test_pack_load()
             cmdlist->SubmitDataCommands(session);
             cmdlist->ReceiveDataBuffer(read_file_buffer("test_data/1489406.jpg-001.ync"));
 
-            std::vector<std::unique_ptr<nf::action>> actions1;
-            std::vector<std::unique_ptr<nf::action>> actions2;
+            std::vector<std::unique_ptr<nf::ThreadTask>> actions1;
+            std::vector<std::unique_ptr<nf::ThreadTask>> actions2;
             download.Complete(*cmdlist, actions1);
 
             while (!actions1.empty())
@@ -331,7 +331,7 @@ void unit_test_pack_load()
                     download.Complete(*it, actions2);
                 }
                 actions1 = std::move(actions2);
-                actions2 = std::vector<std::unique_ptr<nf::action>>();
+                actions2 = std::vector<std::unique_ptr<nf::ThreadTask>>();
             }
 
             BOOST_REQUIRE(download.GetNumFiles() == 1);
@@ -363,8 +363,8 @@ void unit_test_pack_load()
             cmdlist->ReceiveDataBuffer(read_file_buffer("test_data/1489406.jpg-002.ync"));
             cmdlist->ReceiveDataBuffer(read_file_buffer("test_data/1489406.jpg-003.ync"));
 
-            std::vector<std::unique_ptr<nf::action>> actions1;
-            std::vector<std::unique_ptr<nf::action>> actions2;
+            std::vector<std::unique_ptr<nf::ThreadTask>> actions1;
+            std::vector<std::unique_ptr<nf::ThreadTask>> actions2;
             download.Complete(*cmdlist, actions1);
 
             while (!actions1.empty())
@@ -375,7 +375,7 @@ void unit_test_pack_load()
                     download.Complete(*it, actions2);
                 }
                 actions1 = std::move(actions2);
-                actions2 = std::vector<std::unique_ptr<nf::action>>();
+                actions2 = std::vector<std::unique_ptr<nf::ThreadTask>>();
             }
 
             download.Commit();

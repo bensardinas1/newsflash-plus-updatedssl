@@ -38,7 +38,7 @@
 #include "connection.h"
 #include "download.h"
 #include "decode.h"
-#include "action.h"
+#include "thread_task.h"
 #include "assert.h"
 #include "filesys.h"
 #include "filetype.h"
@@ -246,7 +246,7 @@ struct Engine::State {
     std::unique_ptr<ConnTestState> current_connection_test;
 
     std::mutex mutex;
-    std::queue<std::unique_ptr<action>> actions;
+    std::queue<std::unique_ptr<ThreadTask>> actions;
     std::unique_ptr<ThreadPool> threads;
     std::size_t num_pending_actions = 0;
     std::size_t num_pending_tasks = 0;
@@ -291,7 +291,7 @@ struct Engine::State {
             threads.reset(new ThreadPool(max_pooled_threads));
         }
         threads->SetCallback(
-            [&](action* a)
+            [&](ThreadTask* a)
             {
                 std::lock_guard<std::mutex> lock(mutex);
                 actions.emplace(a);
@@ -320,9 +320,9 @@ struct Engine::State {
         return *it;
     }
 
-    void submit(action* a)
+    void submit(ThreadTask* a)
     {
-        if (a->get_affinity() == action::affinity::gui_thread)
+        if (a->get_affinity() == ThreadTask::affinity::gui_thread)
         {
             LOG_D("Action ", a->get_id(), " (", a->describe(),  ") perform by current thread.");
 
@@ -341,18 +341,18 @@ struct Engine::State {
         num_pending_actions++;
     }
 
-    void submit(action* a, ThreadPool::Thread* thread)
+    void submit(ThreadTask* a, ThreadPool::Thread* thread)
     {
         threads->Submit(a, thread);
         num_pending_actions++;
     }
 
-    std::unique_ptr<action> get_action()
+    std::unique_ptr<ThreadTask> get_action()
     {
         std::lock_guard<std::mutex> lock(mutex);
         if (actions.empty())
             return nullptr;
-        std::unique_ptr<action> act = std::move(actions.front());
+        std::unique_ptr<ThreadTask> act = std::move(actions.front());
         actions.pop();
 
         LOG_D("Action ", act->get_id(), " (", act->describe(), ") is complete");
@@ -559,7 +559,7 @@ public:
         ui = ui_;
     }
 
-    void CompleteAction(Engine::State& engine_state, std::unique_ptr<action> act)
+    void CompleteAction(Engine::State& engine_state, std::unique_ptr<ThreadTask> act)
     {
         LOG_D("Connection ", ui_.id, " action ", act->get_id(), "(", act->describe(), ") complete");
 
@@ -744,7 +744,7 @@ public:
     { return conn_->GetPassword(); }
 
 private:
-    void do_action(Engine::State& state, std::unique_ptr<action> a)
+    void do_action(Engine::State& state, std::unique_ptr<ThreadTask> a)
     {
         if (!a) return;
 
@@ -799,7 +799,7 @@ public:
 
         do_action(state, conn_->Connect(spec));
     }
-    void on_action(Engine::State& state, std::unique_ptr<action> act)
+    void on_action(Engine::State& state, std::unique_ptr<ThreadTask> act)
     {
         assert(act->get_owner() == id_);
 
@@ -853,7 +853,7 @@ public:
     { return id_; }
 
 private:
-    void do_action(Engine::State& state, std::unique_ptr<action> act)
+    void do_action(Engine::State& state, std::unique_ptr<ThreadTask> act)
     {
         act->set_owner(id_);
         act->set_log(logger_);
@@ -1099,7 +1099,7 @@ public:
             if (status == Buffer::Status::Success)
                 did_receive_content_ = true;
         }
-        std::vector<std::unique_ptr<action>> actions;
+        std::vector<std::unique_ptr<ThreadTask>> actions;
         task_->Complete(*cmds, actions);
         for (auto& a : actions)
         {
@@ -1153,7 +1153,7 @@ public:
         ui = ui_;
     }
 
-    transition Complete(Engine::State& state, std::unique_ptr<action> act)
+    transition Complete(Engine::State& state, std::unique_ptr<ThreadTask> act)
     {
         const auto size = act->size();
 
@@ -1178,7 +1178,7 @@ public:
             if (act->has_exception())
                 act->rethrow();
 
-            std::vector<std::unique_ptr<action>> actions;
+            std::vector<std::unique_ptr<ThreadTask>> actions;
             task_->Complete(*act, actions);
             act.reset();
 
@@ -1312,7 +1312,7 @@ private:
         return no_transition;
     }
 
-    void DoAction(Engine::State& state, std::unique_ptr<action> a)
+    void DoAction(Engine::State& state, std::unique_ptr<ThreadTask> a)
     {
         if (!a) return;
 
@@ -2389,7 +2389,7 @@ bool Engine::Pump()
         if (state_->quit_pump_loop)
             break;
 
-        std::unique_ptr<action> action = state_->get_action();
+        std::unique_ptr<ThreadTask> action = state_->get_action();
         if (!action)
             break;
 

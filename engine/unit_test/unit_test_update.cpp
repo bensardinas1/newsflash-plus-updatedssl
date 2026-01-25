@@ -50,7 +50,7 @@ void unit_test_ranges()
     });
     session.SetEnablePipelining(true);
 
-    std::vector<std::unique_ptr<newsflash::action>> actions;
+    std::vector<std::unique_ptr<newsflash::ThreadTask>> actions;
 
     {
         newsflash::Update u("", "alt.binaries.test");
@@ -165,7 +165,7 @@ void unit_test_ranges()
 
 void unit_test_data()
 {
-    std::vector<std::unique_ptr<newsflash::action>> actions;
+    std::vector<std::unique_ptr<newsflash::ThreadTask>> actions;
 
     fs::createpath("alt.binaries.test");
     delete_file("alt.binaries.test/vol000000000000000.dat");
@@ -631,7 +631,7 @@ void unit_test_data()
 
 void unit_test_index()
 {
-    std::vector<std::unique_ptr<newsflash::action>> actions;
+    std::vector<std::unique_ptr<newsflash::ThreadTask>> actions;
 
     fs::createpath("alt.binaries.test");
     delete_file("alt.binaries.test/vol000000000025676.dat");

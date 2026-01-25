@@ -36,7 +36,7 @@
 #include "buffer.h"
 #include "session.h"
 #include "cmdlist.h"
-#include "action.h"
+#include "thread_task.h"
 #include "event.h"
 #include "socketapi.h"
 #include "throttle.h"
@@ -92,7 +92,7 @@ struct ConnectionImpl::impl {
 };
 
 // perform host resolution
-class ConnectionImpl::resolve : public action
+class ConnectionImpl::resolve : public ThreadTask
 {
 public:
     resolve(std::shared_ptr<impl> s) : state_(s)
@@ -147,7 +147,7 @@ private:
 };
 
 // perform socket connect
-class ConnectionImpl::connect : public action
+class ConnectionImpl::connect : public ThreadTask
 {
 public:
     connect(std::shared_ptr<impl> s) : state_(s)
@@ -205,7 +205,7 @@ private:
 };
 
 // perform nntp init
-class ConnectionImpl::initialize : public action
+class ConnectionImpl::initialize : public ThreadTask
 {
 public:
     initialize(std::shared_ptr<impl> s) : state_(s)
@@ -302,7 +302,7 @@ private:
 };
 
 // execute cmdlist
-class ConnectionImpl::execute : public action
+class ConnectionImpl::execute : public ThreadTask
 {
 public:
     execute(std::shared_ptr<impl> s, std::shared_ptr<CmdList> cmd) : state_(s), cmds_(cmd)
@@ -582,7 +582,7 @@ private:
 private:
 };
 
-class ConnectionImpl::disconnect : public action
+class ConnectionImpl::disconnect : public ThreadTask
 {
 public:
     disconnect(std::shared_ptr<impl> s) : state_(s)
@@ -646,7 +646,7 @@ private:
     std::shared_ptr<impl> state_;
 };
 
-class ConnectionImpl::ping : public action
+class ConnectionImpl::ping : public ThreadTask
 {
 public:
     ping(std::shared_ptr<impl> s) : state_(s)
@@ -707,7 +707,7 @@ ConnectionImpl::ConnectionImpl()
     state_ = std::make_shared<impl>();
 }
 
-std::unique_ptr<action> ConnectionImpl::Connect(const HostDetails& s)
+std::unique_ptr<ThreadTask> ConnectionImpl::Connect(const HostDetails& s)
 {
     state_->username = s.username;
     state_->password = s.password;
@@ -730,28 +730,28 @@ std::unique_ptr<action> ConnectionImpl::Connect(const HostDetails& s)
     state_->pending_socket_error = std::error_code();
     state_->pending_session_error = Session::Error::None;
     state_->pending_connection_error = Connection::Error::None;
-    std::unique_ptr<action> act(new resolve(state_));
+    std::unique_ptr<ThreadTask> act(new resolve(state_));
 
     return act;
 }
 
-std::unique_ptr<action> ConnectionImpl::Disconnect()
+std::unique_ptr<ThreadTask> ConnectionImpl::Disconnect()
 {
-    std::unique_ptr<action> a(new class disconnect(state_));
+    std::unique_ptr<ThreadTask> a(new class disconnect(state_));
 
     return a;
 }
 
-std::unique_ptr<action> ConnectionImpl::Ping()
+std::unique_ptr<ThreadTask> ConnectionImpl::Ping()
 {
-    std::unique_ptr<action> a(new class ping(state_));
+    std::unique_ptr<ThreadTask> a(new class ping(state_));
 
     return a;
 }
 
-std::unique_ptr<action> ConnectionImpl::Complete(std::unique_ptr<action> a)
+std::unique_ptr<ThreadTask> ConnectionImpl::Complete(std::unique_ptr<ThreadTask> a)
 {
-    std::unique_ptr<action> next;
+    std::unique_ptr<ThreadTask> next;
 
     // map different levels of errors to higher level connection error.
     if (state_->pending_socket_error)
@@ -855,11 +855,11 @@ std::unique_ptr<action> ConnectionImpl::Complete(std::unique_ptr<action> a)
     return next;
 }
 
-std::unique_ptr<action> ConnectionImpl::Execute(std::shared_ptr<CmdList> cmd)
+std::unique_ptr<ThreadTask> ConnectionImpl::Execute(std::shared_ptr<CmdList> cmd)
 {
     state_->cancel->ResetSignal();
 
-    std::unique_ptr<action> act(new class execute(state_, std::move(cmd)));
+    std::unique_ptr<ThreadTask> act(new class execute(state_, std::move(cmd)));
 
     state_->state = State::Active;
 

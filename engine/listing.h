@@ -57,7 +57,7 @@ namespace newsflash
         // Task implementation
         virtual std::shared_ptr<CmdList> CreateCommands() override;
         virtual void Complete(CmdList& cmd,
-            std::vector<std::unique_ptr<action>>& actions) override;
+            std::vector<std::unique_ptr<ThreadTask>>& actions) override;
         virtual bool HasCommands() const override;
         virtual bool HasProgress() const override;
         virtual float GetProgress() const override;

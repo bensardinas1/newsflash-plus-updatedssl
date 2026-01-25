@@ -90,7 +90,7 @@ public:
         committed_ = true;
     }
 
-    class DecodeJob : public action
+    class DecodeJob : public ThreadTask
     {
     public:
         DecodeJob(const std::string& cmd) : cmd_(cmd)
@@ -107,8 +107,8 @@ public:
     };
 
 
-    virtual void Complete(action& act,
-        std::vector<std::unique_ptr<action>>& next) override
+    virtual void Complete(ThreadTask& act,
+        std::vector<std::unique_ptr<ThreadTask>>& next) override
     {
         if (auto* job = dynamic_cast<DecodeJob*>(&act))
         {
@@ -120,7 +120,7 @@ public:
     }
 
     virtual void Complete(CmdList& cmdlist,
-        std::vector<std::unique_ptr<action>>& next) override
+        std::vector<std::unique_ptr<ThreadTask>>& next) override
     {
         BOOST_REQUIRE(cmdlist.NumBuffers() == cmdlist.NumDataCommands());
         BOOST_REQUIRE(cmdlist.NumBuffers() == state_.num_buffers);
@@ -297,12 +297,12 @@ public:
         committed_ = true;
     }
 
-    virtual void Complete(action& act,
-        std::vector<std::unique_ptr<action>>& next) override
+    virtual void Complete(ThreadTask& act,
+        std::vector<std::unique_ptr<ThreadTask>>& next) override
     {}
 
     virtual void Complete(CmdList& cmd,
-        std::vector<std::unique_ptr<action>>& next) override
+        std::vector<std::unique_ptr<ThreadTask>>& next) override
     {}
 
     virtual void Configure(const Settings& settings) override
@@ -367,12 +367,12 @@ public:
         committed_ = true;
     }
 
-    virtual void Complete(action& act,
-        std::vector<std::unique_ptr<action>>& next) override
+    virtual void Complete(ThreadTask& act,
+        std::vector<std::unique_ptr<ThreadTask>>& next) override
     {}
 
     virtual void Complete(CmdList& cmd,
-        std::vector<std::unique_ptr<action>>& next) override
+        std::vector<std::unique_ptr<ThreadTask>>& next) override
     {}
 
     virtual void Configure(const Settings& settings) override
@@ -432,7 +432,7 @@ void append(Buffer& buff, const char* str)
 class TestConnection : public Connection
 {
 public:
-    struct Resolve : public action
+    struct Resolve : public ThreadTask
     {
         virtual void xperform() override
         {
@@ -442,13 +442,13 @@ public:
         std::string host_;
     };
 
-    struct Connect : public action
+    struct Connect : public ThreadTask
     {
         virtual void xperform() override
         {}
     };
 
-    struct Initialize : public action
+    struct Initialize : public ThreadTask
     {
         Initialize(std::shared_ptr<Session> session) : session_(session)
         {}
@@ -493,19 +493,19 @@ public:
         std::shared_ptr<Session> session_;
     };
 
-    struct Disconnect : public action
+    struct Disconnect : public ThreadTask
     {
         virtual void xperform() override
         {}
     };
 
-    struct Ping : public action
+    struct Ping : public ThreadTask
     {
         virtual void xperform() override
         {}
     };
 
-    struct DummyExecute : public action
+    struct DummyExecute : public ThreadTask
     {
         virtual void xperform() override
         {}
@@ -523,7 +523,7 @@ public:
         Connection::OnCmdlistDone callback;
     };
 
-    struct Execute : public action
+    struct Execute : public ThreadTask
     {
         virtual void xperform() override
         {
@@ -679,7 +679,7 @@ public:
         session_ = std::make_shared<Session>();
     }
 
-    virtual std::unique_ptr<action> Connect(const HostDetails& host) override
+    virtual std::unique_ptr<ThreadTask> Connect(const HostDetails& host) override
     {
         state_ = Connection::State::Resolving;
         session_->Reset();
@@ -689,21 +689,21 @@ public:
         return std::move(ret);
     }
 
-    virtual std::unique_ptr<action> Disconnect() override
+    virtual std::unique_ptr<ThreadTask> Disconnect() override
     {
         return nullptr;
     }
 
-    virtual std::unique_ptr<action> Ping() override
+    virtual std::unique_ptr<ThreadTask> Ping() override
     {
         return nullptr;
     }
 
-    virtual std::unique_ptr<action> Complete(std::unique_ptr<action> a) override
+    virtual std::unique_ptr<ThreadTask> Complete(std::unique_ptr<ThreadTask> a) override
     {
         auto* ptr = a.get();
 
-        std::unique_ptr<action> next;
+        std::unique_ptr<ThreadTask> next;
 
         if (conn_state_.errors_[(int)state_] != Connection::Error::None)
         {
@@ -743,7 +743,7 @@ public:
         return next;
     }
 
-    virtual std::unique_ptr<action> Execute(std::shared_ptr<CmdList> cmd) override
+    virtual std::unique_ptr<ThreadTask> Execute(std::shared_ptr<CmdList> cmd) override
     {
         if (conn_state_.errors_[(int)Connection::State::Active] != Connection::Error::None)
         {

@@ -28,7 +28,7 @@
 #include <functional>
 
 #include <cstdint>
-#include "action.h"
+#include "thread_task.h"
 
 namespace newsflash
 {
@@ -78,19 +78,19 @@ namespace newsflash
         virtual ~Connection() = default;
 
         // begin connecting to the given host specification.
-        virtual std::unique_ptr<action> Connect(const HostDetails& host) = 0;
+        virtual std::unique_ptr<ThreadTask> Connect(const HostDetails& host) = 0;
 
         // perform disconnect from the host.
-        virtual std::unique_ptr<action> Disconnect() = 0;
+        virtual std::unique_ptr<ThreadTask> Disconnect() = 0;
 
         // perform ping
-        virtual std::unique_ptr<action> Ping() = 0;
+        virtual std::unique_ptr<ThreadTask> Ping() = 0;
 
         // complete the given action. returns a new action if any.
-        virtual std::unique_ptr<action> Complete(std::unique_ptr<action> a) = 0;
+        virtual std::unique_ptr<ThreadTask> Complete(std::unique_ptr<ThreadTask> a) = 0;
 
         // execute the given cmdlist
-        virtual std::unique_ptr<action> Execute(std::shared_ptr<CmdList> cmd) = 0;
+        virtual std::unique_ptr<ThreadTask> Execute(std::shared_ptr<CmdList> cmd) = 0;
 
         // cancel a pending operation in the connection such as connecting
         // or executing a cmdlist. note that if the operation is excute
@@ -139,19 +139,19 @@ namespace newsflash
         ConnectionImpl();
 
         // begin connecting to the given host specification.
-        virtual std::unique_ptr<action> Connect(const HostDetails& host) override;
+        virtual std::unique_ptr<ThreadTask> Connect(const HostDetails& host) override;
 
         // perform disconnect from the host.
-        virtual std::unique_ptr<action> Disconnect() override;
+        virtual std::unique_ptr<ThreadTask> Disconnect() override;
 
         // perform ping
-        virtual std::unique_ptr<action> Ping() override;
+        virtual std::unique_ptr<ThreadTask> Ping() override;
 
         // complete the given action. returns a new action if any.
-        virtual std::unique_ptr<action> Complete(std::unique_ptr<action> a) override;
+        virtual std::unique_ptr<ThreadTask> Complete(std::unique_ptr<ThreadTask> a) override;
 
         // execute the given cmdlist
-        virtual std::unique_ptr<action> Execute(std::shared_ptr<CmdList> cmd) override;
+        virtual std::unique_ptr<ThreadTask> Execute(std::shared_ptr<CmdList> cmd) override;
 
         // cancel a pending operation in the connection such as connecting
         // or executing a cmdlist. note that if the operation is excute

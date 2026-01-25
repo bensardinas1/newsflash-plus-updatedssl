@@ -35,7 +35,7 @@ namespace newsflash
     // when the action completes successfully and is returned
     // to the originating object the object is expected to complete
     // a state transition to another state succesfully.
-    class action
+    class ThreadTask
     {
     public:
         enum class affinity {
@@ -52,9 +52,9 @@ namespace newsflash
             single_thread
         };
 
-        virtual ~action() = default;
+        virtual ~ThreadTask() = default;
 
-        action(affinity a = affinity::any_thread) : owner_(0), affinity_(a)
+        ThreadTask(affinity a = affinity::any_thread) : owner_(0), affinity_(a)
         {
             static std::atomic<std::size_t> id(1);
             id_ = id++;

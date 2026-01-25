@@ -33,7 +33,7 @@
 #include "filebuf.h"
 #include "update.h"
 #include "buffer.h"
-#include "action.h"
+#include "thread_task.h"
 #include "nntp.h"
 #include "utf8.h"
 #include "logging.h"
@@ -160,7 +160,7 @@ struct Update::state {
 };
 
 // parse NNTP overview data
-class Update::parse : public action
+class Update::parse : public ThreadTask
 {
 public:
     parse(Buffer&& buff) : buffer_(std::move(buff))
@@ -195,7 +195,7 @@ private:
     Buffer buffer_;
 };
 
-class Update::store : public action
+class Update::store : public ThreadTask
 {
 public:
     store(std::shared_ptr<state> s) : state_(s), first_(0), last_(0)
@@ -588,7 +588,7 @@ void Update::Commit()
     commit_done_ = true;
 }
 
-void Update::Complete(CmdList& cmd, std::vector<std::unique_ptr<action>>& next)
+void Update::Complete(CmdList& cmd, std::vector<std::unique_ptr<ThreadTask>>& next)
 {
     if (cmd.GetType() == CmdList::Type::GroupInfo)
     {
@@ -617,21 +617,21 @@ void Update::Complete(CmdList& cmd, std::vector<std::unique_ptr<action>>& next)
             if (buffer.GetContentStatus() != Buffer::Status::Success)
                 continue;
 
-            std::unique_ptr<action> p(new parse(std::move(buffer)));
-            p->set_affinity(action::affinity::any_thread);
+            std::unique_ptr<ThreadTask> p(new parse(std::move(buffer)));
+            p->set_affinity(ThreadTask::affinity::any_thread);
             next.push_back(std::move(p));
         }
     }
 }
 
-void Update::Complete(action& a, std::vector<std::unique_ptr<action>>& next)
+void Update::Complete(ThreadTask& a, std::vector<std::unique_ptr<ThreadTask>>& next)
 {
     if (auto* p = dynamic_cast<parse*>(&a))
     {
         std::unique_ptr<store> s(new store(state_));
         s->articles_ = std::move(p->articles_);
         s->bytes_ = p->size();
-        s->set_affinity(action::affinity::single_thread);
+        s->set_affinity(ThreadTask::affinity::single_thread);
         next.push_back(std::move(s));
     }
     if (auto* p = dynamic_cast<store*>(&a))

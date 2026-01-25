@@ -28,7 +28,7 @@
 #include <thread>
 
 #include "engine/threadpool.h"
-#include "engine/action.h"
+#include "engine/thread_task.h"
 
 // the threading test cases where will print out a lot of errors when ran with helgrind such as:
 // ==2971== Possible data race during read of size 4 at 0x676AB4 by thread #4
@@ -43,7 +43,7 @@ void unit_test_pool()
 {
     std::atomic_int counter {0};
 
-    struct action : public newsflash::action
+    struct action : public newsflash::ThreadTask
     {
     public:
         action(std::atomic_int& c) : counter_(c)
@@ -59,14 +59,14 @@ void unit_test_pool()
 
     newsflash::ThreadPool threads(4);
     threads.SetCallback(
-        [](newsflash::action* a) {
+        [](newsflash::ThreadTask* a) {
             delete a;
         });
 
     for (int i=0; i<10000; ++i)
     {
         auto* a = new action(counter);
-        a->set_affinity(newsflash::action::affinity::any_thread);
+        a->set_affinity(newsflash::ThreadTask::affinity::any_thread);
         a->set_owner(i);
         threads.Submit(a);
     }
@@ -81,7 +81,7 @@ void unit_test_private_thread()
     std::atomic_int generic_counter {0};
     std::atomic_int private_counter {0};
 
-    struct generic_counter_action : public newsflash::action
+    struct generic_counter_action : public newsflash::ThreadTask
     {
     public:
         generic_counter_action(std::atomic_int& c) : counter_(c)
@@ -95,7 +95,7 @@ void unit_test_private_thread()
         std::atomic_int& counter_;
     };
 
-    struct private_counter_action : public newsflash::action
+    struct private_counter_action : public newsflash::ThreadTask
     {
     public:
         private_counter_action(std::atomic_int& c) : counter_(c)
@@ -114,7 +114,7 @@ void unit_test_private_thread()
     newsflash::ThreadPool threads(4);
 
     threads.SetCallback(
-        [](newsflash::action* a) {
+        [](newsflash::ThreadTask* a) {
             delete a;
         });
 
@@ -124,7 +124,7 @@ void unit_test_private_thread()
     for (int i=0; i<10000; ++i)
     {
         auto* a = new generic_counter_action(generic_counter);
-        a->set_affinity(newsflash::action::affinity::any_thread);
+        a->set_affinity(newsflash::ThreadTask::affinity::any_thread);
         a->set_owner(i);
         threads.Submit(a);
 
@@ -141,7 +141,7 @@ void unit_test_private_thread()
 
 void unit_test_main_thread()
 {
-    struct action : public newsflash::action
+    struct action : public newsflash::ThreadTask
     {
     public:
         action(std::atomic_int& c) : counter_(c)
@@ -158,7 +158,7 @@ void unit_test_main_thread()
     newsflash::ThreadPool threads(0);
     threads.AddMainThread(true, false);
     threads.SetCallback(
-        [](newsflash::action* a) {
+        [](newsflash::ThreadTask* a) {
             delete a;
         });
 
@@ -167,7 +167,7 @@ void unit_test_main_thread()
     for (int i=0; i<10000; ++i)
     {
         auto* a = new action(counter);
-        a->set_affinity(newsflash::action::affinity::any_thread);
+        a->set_affinity(newsflash::ThreadTask::affinity::any_thread);
         a->set_owner(i);
         threads.Submit(a);
         threads.RunMainThreads();

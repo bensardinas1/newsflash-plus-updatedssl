@@ -28,7 +28,7 @@
 #include <thread>
 
 #include "threadpool.h"
-#include "action.h"
+#include "thread_task.h"
 #include "minidump.h"
 
 namespace newsflash
@@ -48,7 +48,7 @@ public:
     virtual ~Thread() = default;
     virtual void Run()
     {}
-    virtual void Submit(action* act) = 0;
+    virtual void Submit(ThreadTask* act) = 0;
     virtual void Shutdown() = 0;
 
     virtual bool InPrivateUse() const
@@ -68,7 +68,7 @@ public:
         run_loop = true;
         thread.reset(new std::thread(std::bind(&RealThread::ThreadSehMain, this)));
     }
-    virtual void Submit(action* act) override
+    virtual void Submit(ThreadTask* act) override
     {
         std::lock_guard<std::mutex> lock(mutex);
         queue.push(act);
@@ -105,7 +105,7 @@ private:
 
             assert(!queue.empty());
 
-            action* next = queue.front();
+            ThreadTask* next = queue.front();
             queue.pop();
             lock.unlock();
 
@@ -128,7 +128,7 @@ private:
     std::mutex mutex;
     std::condition_variable cond;
     std::unique_ptr<std::thread> thread;
-    std::queue<action*> queue;
+    std::queue<ThreadTask*> queue;
     bool run_loop = false;
     std::shared_ptr<State> state_;
 };
@@ -143,14 +143,14 @@ public:
     {
         while (!queue_.empty())
         {
-            action* top = queue_.front();
+            ThreadTask* top = queue_.front();
             queue_.pop();
             top->perform();
             state_->callback(top);
             state_->queue_size--;
         }
     }
-    virtual void Submit(action* act) override
+    virtual void Submit(ThreadTask* act) override
     { queue_.push(act); }
 
     virtual void Shutdown() override
@@ -164,7 +164,7 @@ public:
 
 private:
     bool in_use_ = false;
-    std::queue<action*> queue_;
+    std::queue<ThreadTask*> queue_;
     std::shared_ptr<State> state_;
 };
 
@@ -214,14 +214,14 @@ void ThreadPool::AddMainThread(bool pooled, bool private_thread)
 
 }
 
-void ThreadPool::Submit(action* act)
+void ThreadPool::Submit(ThreadTask* act)
 {
 
     const auto num_threads  = pooled_threads_.size();
     const auto affinity = act->get_affinity();
     Thread* thread = nullptr;
 
-    if (affinity == action::affinity::any_thread)
+    if (affinity == ThreadTask::affinity::any_thread)
     {
         thread = pooled_threads_[round_robin_ % num_threads].get();
         round_robin_++;
@@ -236,7 +236,7 @@ void ThreadPool::Submit(action* act)
     state_->queue_size++;
 }
 
-void ThreadPool::Submit(action* act, ThreadPool::Thread* thread)
+void ThreadPool::Submit(ThreadTask* act, ThreadPool::Thread* thread)
 {
     thread->Submit(act);
 

@@ -27,7 +27,7 @@
 #include <vector>
 #include <string>
 
-#include "action.h"
+#include "thread_task.h"
 #include "bitflag.h"
 
 namespace newsflash
@@ -76,13 +76,13 @@ namespace newsflash
 
         // complete the action. create actions (if any) and store
         // them in the next list
-        virtual void Complete(action& act,
-            std::vector<std::unique_ptr<action>>& next) {}
+        virtual void Complete(ThreadTask& act,
+            std::vector<std::unique_ptr<ThreadTask>>& next) {}
 
         // complete the cmdlist. create actions (if any) and store
         // them in the next list
         virtual void Complete(CmdList& cmd,
-            std::vector<std::unique_ptr<action>>& next) {}
+            std::vector<std::unique_ptr<ThreadTask>>& next) {}
 
         // update task settings
         virtual void Configure(const Settings& settings) {}

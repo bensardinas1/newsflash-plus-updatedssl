@@ -31,7 +31,7 @@
 #include <iterator>
 
 #include "engine/connection.h"
-#include "engine/action.h"
+#include "engine/thread_task.h"
 #include "engine/sockets.h"
 #include "engine/socketapi.h"
 #include "engine/cmdlist.h"
@@ -57,7 +57,7 @@ void test_connect()
 {
     auto log = std::make_shared<nf::StdLogger>(std::cout);
 
-    std::unique_ptr<nf::action> act;
+    std::unique_ptr<nf::ThreadTask> act;
 
     // resolve fails
     {
@@ -288,7 +288,7 @@ void test_execute_success()
 {
     auto log = std::make_shared<nf::StdLogger>(std::cout);
 
-    std::unique_ptr<nf::action> act;
+    std::unique_ptr<nf::ThreadTask> act;
 
     nf::throttle throttle;
 
@@ -383,7 +383,7 @@ void test_execute_failure()
 {
     auto log = std::make_shared<nf::StdLogger>(std::cout);
 
-    std::unique_ptr<nf::action> act;
+    std::unique_ptr<nf::ThreadTask> act;
 
     nf::throttle throttle;
     nf::Connection::HostDetails s;

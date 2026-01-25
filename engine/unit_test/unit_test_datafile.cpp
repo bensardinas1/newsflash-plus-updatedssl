@@ -101,7 +101,7 @@ void unit_test_discard()
         nf::ThreadPool threads(4);
 
         threads.SetCallback(
-            [&](nf::action* a)
+            [&](nf::ThreadTask* a)
             {
                 BOOST_REQUIRE(a->has_exception() == false);
                 delete a;

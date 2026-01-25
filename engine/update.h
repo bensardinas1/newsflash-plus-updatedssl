@@ -64,9 +64,9 @@ namespace newsflash
         virtual void Cancel() override;
         virtual void Commit() override;
         virtual void Complete(CmdList& cmd,
-            std::vector<std::unique_ptr<action>>& next) override;
-        virtual void Complete(action& a,
-            std::vector<std::unique_ptr<action>>& next) override;
+            std::vector<std::unique_ptr<ThreadTask>>& next) override;
+        virtual void Complete(ThreadTask& a,
+            std::vector<std::unique_ptr<ThreadTask>>& next) override;
         virtual bool HasCommands() const override;
         virtual bool HasProgress() const override;
         virtual float GetProgress() const override;

@@ -68,7 +68,7 @@ std::shared_ptr<CmdList> Listing::CreateCommands()
     return cmd;
 }
 
-void Listing::Complete(CmdList& cmd, std::vector<std::unique_ptr<action>>& actions)
+void Listing::Complete(CmdList& cmd, std::vector<std::unique_ptr<ThreadTask>>& actions)
 {
     state_->complete = true;
     state_->groups.clear();

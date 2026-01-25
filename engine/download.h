@@ -58,10 +58,10 @@ namespace newsflash
         virtual std::shared_ptr<CmdList> CreateCommands() override;
         virtual void Cancel() override;
         virtual void Commit() override;
-        virtual void Complete(action& act,
-            std::vector<std::unique_ptr<action>>& next) override;
+        virtual void Complete(ThreadTask& act,
+            std::vector<std::unique_ptr<ThreadTask>>& next) override;
         virtual void Complete(CmdList& cmd,
-            std::vector<std::unique_ptr<action>>& next) override;
+            std::vector<std::unique_ptr<ThreadTask>>& next) override;
         virtual void Configure(const Settings& settings) override;
         virtual bool HasCommands() const override;
         virtual bool HasProgress() const override;
