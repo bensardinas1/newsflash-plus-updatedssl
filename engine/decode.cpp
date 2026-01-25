@@ -50,23 +50,40 @@ std::string to_utf8(const std::string& str)
     return utf8::encode(wide);
 }
 
+std::string ReadFirstLine(const char* data, size_t len)
+{
+    std::string ret;
+    for (size_t i=0; i<len; ++i)
+    {
+        if (data[i] == '\n')
+            break;
+        ret.push_back(data[i]);
+    }
+    if (!ret.empty())
+    {
+        if (ret.back() == '\r')
+            ret.pop_back();
+    }
+    return ret;
+}
+
 } // namespace
 
 namespace newsflash
 {
 
-DecodeJob::DecodeJob(const Buffer& data) : data_(data)
+DecodeContentTask::DecodeContentTask(const Buffer& data) : data_(data)
 {}
 
-DecodeJob::DecodeJob(Buffer&& data) : data_(std::move(data))
+DecodeContentTask::DecodeContentTask(Buffer&& data) : data_(std::move(data))
 {}
 
-std::string DecodeJob::Describe() const
+std::string DecodeContentTask::Describe() const
 {
     return "DecodeJob";
 }
 
-void DecodeJob::DoWork()
+void DecodeContentTask::DoWork()
 {
     // iterate over the content line by line and inspect
     // every line untill we can identify a binary encoding.
@@ -151,14 +168,17 @@ void DecodeJob::DoWork()
     std::copy(textptr, textend, std::back_inserter(text_));
 }
 
-std::size_t DecodeJob::decode_yenc_single(const char* data, std::size_t len)
+std::size_t DecodeContentTask::decode_yenc_single(const char* data, std::size_t len)
 {
     nntp::bodyiter beg(data, len);
     nntp::bodyiter end(data + len, 0);
 
     const auto header = yenc::parse_header(beg, end);
     if (!header.first)
-        throw Exception("broken or missing yenc header");
+    {
+        LOG_E("Broken or missing yEnc header: " + ReadFirstLine(data, len));
+        throw Exception("broken or missing yEnc header");
+    }
 
     std::vector<char> buff;
     buff.reserve(header.second.size);
@@ -166,7 +186,10 @@ std::size_t DecodeJob::decode_yenc_single(const char* data, std::size_t len)
 
     const auto footer = yenc::parse_footer(beg, end);
     if (!footer.first)
-        throw Exception("broken or missing yenc footer");
+    {
+        // todo: LOG_E
+        throw Exception("broken or missing yEnc footer");
+    }
 
     binary_        = std::move(buff);
     binary_name_   = to_utf8(header.second.name);
@@ -193,18 +216,24 @@ std::size_t DecodeJob::decode_yenc_single(const char* data, std::size_t len)
     return beg.position();
 }
 
-std::size_t DecodeJob::decode_yenc_multi(const char* data, std::size_t len)
+std::size_t DecodeContentTask::decode_yenc_multi(const char* data, std::size_t len)
 {
     nntp::bodyiter beg(data, len);
     nntp::bodyiter end(data + len, 0);
 
     const auto header = yenc::parse_header(beg, end);
     if (!header.first)
-        throw Exception("broken or missing yenc header");
+    {
+        LOG_E("Broken or missing yEnc multi-part header: " + ReadFirstLine(data, len));
+        throw Exception("broken or missing yEnc multi-part header");
+    }
 
     const auto part = yenc::parse_part(beg, end);
     if (!part.first)
-        throw Exception("broken or missing yenc part header");
+    {
+        // todo: LOG_E the current line.
+        throw Exception("broken or missing yEnc multi-part header");
+    }
 
     // yenc uses 1 based offsets
     const auto offset = part.second.begin - 1;
@@ -243,7 +272,7 @@ std::size_t DecodeJob::decode_yenc_multi(const char* data, std::size_t len)
     return beg.position();
 }
 
-std::size_t DecodeJob::decode_uuencode_single(const char* data, std::size_t len)
+std::size_t DecodeContentTask::decode_uuencode_single(const char* data, std::size_t len)
 {
     nntp::bodyiter beg(data, len);
     nntp::bodyiter end(data + len, 0);
@@ -281,7 +310,7 @@ std::size_t DecodeJob::decode_uuencode_single(const char* data, std::size_t len)
     return beg.position();
 }
 
-std::size_t DecodeJob::decode_uuencode_multi(const char* data, std::size_t len)
+std::size_t DecodeContentTask::decode_uuencode_multi(const char* data, std::size_t len)
 {
     nntp::bodyiter beg(data, len);
     nntp::bodyiter end(data + len, 0);

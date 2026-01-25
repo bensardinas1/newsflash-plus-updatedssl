@@ -138,14 +138,14 @@ void Download::Complete(ThreadTask& act, std::vector<std::unique_ptr<ThreadTask>
 
     // the action is either a decoding action or a datafile::write action.
     // for the write there's nothing we need to do.
-    auto* dec = dynamic_cast<DecodeJob*>(&act);
+    auto* dec = dynamic_cast<DecodeContentTask*>(&act);
     if (dec == nullptr)
         return;
 
     const auto err = dec->GetErrors();
-    if (err.test(DecodeJob::Error::CrcMismatch))
+    if (err.test(DecodeContentTask::Error::CrcMismatch))
         errors_.set(EngineTask::Error::CrcMismatch);
-    if (err.test(DecodeJob::Error::SizeMismatch))
+    if (err.test(DecodeContentTask::Error::SizeMismatch))
         errors_.set(EngineTask::Error::SizeMismatch);
 
     auto binary = dec->GetBinaryDataMove(); //std::move(*dec).get_binary_data();
@@ -156,7 +156,7 @@ void Download::Complete(ThreadTask& act, std::vector<std::unique_ptr<ThreadTask>
     if (!binary.empty())
     {
         const auto enc = dec->GetEncoding();
-        if (enc == DecodeJob::Encoding::yEnc)
+        if (enc == DecodeContentTask::Encoding::yEnc)
         {
             // see comment in datafile about the +1 for offset
             const auto offset = dec->HasOffset() ?
@@ -175,7 +175,7 @@ void Download::Complete(ThreadTask& act, std::vector<std::unique_ptr<ThreadTask>
             std::unique_ptr<ThreadTask> write  = file->Write(offset, std::move(binary), callback_);
             next.push_back(std::move(write));
         }
-        else if (enc == DecodeJob::Encoding::UUEncode)
+        else if (enc == DecodeContentTask::Encoding::UUEncode)
         {
             // uuencode is a cumbersome encoding scheme. it's used mostly for pictures
             // and large pictures are split into multiple posts. however the encoding itself
@@ -277,7 +277,7 @@ void Download::Complete(CmdList& cmd, std::vector<std::unique_ptr<ThreadTask>>& 
         // create a decoding job and push into the output queue
         if (status == Buffer::Status::Success)
         {
-            std::unique_ptr<DecodeJob> dec(new DecodeJob(std::move(buffer)));
+            std::unique_ptr<DecodeContentTask> dec(new DecodeContentTask(std::move(buffer)));
             dec->SetAffinity(affinity);
             next.push_back(std::move(dec));
         }

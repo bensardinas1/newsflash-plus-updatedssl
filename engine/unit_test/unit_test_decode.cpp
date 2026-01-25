@@ -33,7 +33,8 @@ void unit_test_yenc_single()
 {
     // successful DecodeJob
     {
-        nf::DecodeJob dec(read_file_buffer("test_data/newsflash_2_0_0.yenc"));
+
+        nf::DecodeContentTask dec(read_file_buffer("test_data/newsflash_2_0_0.yenc"));
         dec.PerformTask();
 
         const auto png = read_file_contents("test_data/newsflash_2_0_0.png");
@@ -42,7 +43,7 @@ void unit_test_yenc_single()
         BOOST_REQUIRE(dec.GetBinarySize() == png.size());
         BOOST_REQUIRE(dec.GetBinaryName() == "test.png");
         BOOST_REQUIRE(dec.GetErrors().any_bit() == false);
-        BOOST_REQUIRE(dec.GetEncoding() == nf::DecodeJob::Encoding::yEnc);
+        BOOST_REQUIRE(dec.GetEncoding() == nf::DecodeContentTask::Encoding::yEnc);
 
         const auto& bin = dec.GetBinaryData();
         const auto& txt = dec.GetTextData();
@@ -54,19 +55,19 @@ void unit_test_yenc_single()
 
     // error (throws an exception)
     {
-        nf::DecodeJob dec(read_file_buffer("test_data/newsflash_2_0_0.broken.yenc"));
+        nf::DecodeContentTask dec(read_file_buffer("test_data/newsflash_2_0_0.broken.yenc"));
         dec.PerformTask();
         BOOST_REQUIRE(dec.HasException());
     }
 
     // damaged
     {
-        nf::DecodeJob dec(read_file_buffer("test_data/newsflash_2_0_0.damaged.yenc"));
+        nf::DecodeContentTask dec(read_file_buffer("test_data/newsflash_2_0_0.damaged.yenc"));
         dec.PerformTask();
 
         const auto err = dec.GetErrors();
-        BOOST_REQUIRE(err.test(nf::DecodeJob::Error::CrcMismatch));
-        BOOST_REQUIRE(err.test(nf::DecodeJob::Error::SizeMismatch));
+        BOOST_REQUIRE(err.test(nf::DecodeContentTask::Error::CrcMismatch));
+        BOOST_REQUIRE(err.test(nf::DecodeContentTask::Error::SizeMismatch));
     }
 }
 
@@ -82,7 +83,8 @@ void unit_test_yenc_multi()
         std::size_t offset = 0;
         // first part
         {
-            nf::DecodeJob dec(read_file_buffer("test_data/1489406.jpg-001.ync"));
+
+            nf::DecodeContentTask dec(read_file_buffer("test_data/1489406.jpg-001.ync"));
             dec.PerformTask();
 
             BOOST_REQUIRE(dec.GetBinaryOffset() == offset);
@@ -97,7 +99,8 @@ void unit_test_yenc_multi()
 
         // second part
         {
-            nf::DecodeJob dec(read_file_buffer("test_data/1489406.jpg-002.ync"));
+
+            nf::DecodeContentTask dec(read_file_buffer("test_data/1489406.jpg-002.ync"));
             dec.PerformTask();
 
             BOOST_REQUIRE(dec.GetBinaryOffset() == offset);
@@ -112,7 +115,8 @@ void unit_test_yenc_multi()
 
         // third part
         {
-            nf::DecodeJob dec(read_file_buffer("test_data/1489406.jpg-003.ync"));
+
+            nf::DecodeContentTask dec(read_file_buffer("test_data/1489406.jpg-003.ync"));
             dec.PerformTask();
 
             BOOST_REQUIRE(dec.GetBinaryOffset() == offset);
@@ -130,14 +134,15 @@ void unit_test_yenc_multi()
 
     // error (throws an exception)
     {
-        nf::DecodeJob dec(read_file_buffer("test_data/1489406.jpg-001.broken.ync"));
+        nf::DecodeContentTask dec(read_file_buffer("test_data/1489406.jpg-001.broken.ync"));
         dec.PerformTask();
         BOOST_REQUIRE(dec.HasException());
     }
 
     // damaged
     {
-        nf::DecodeJob dec(read_file_buffer("test_data/1489406.jpg-001.damaged.ync"));
+
+        nf::DecodeContentTask dec(read_file_buffer("test_data/1489406.jpg-001.damaged.ync"));
         dec.PerformTask();
 
         const auto flags = dec.GetErrors();
@@ -149,7 +154,7 @@ void unit_test_uuencode_single()
 {
     // successful DecodeJob
     {
-        nf::DecodeJob dec(read_file_buffer("test_data/newsflash_2_0_0.uuencode"));
+        nf::DecodeContentTask dec(read_file_buffer("test_data/newsflash_2_0_0.uuencode"));
         dec.PerformTask();
 
         const auto png = read_file_contents("test_data/newsflash_2_0_0.png");
@@ -176,7 +181,7 @@ void unit_test_uuencode_multi()
 
         // first part
         {
-            nf::DecodeJob dec(read_file_buffer("test_data/1489406.jpg-001.uuencode"));
+            nf::DecodeContentTask dec(read_file_buffer("test_data/1489406.jpg-001.uuencode"));
             dec.PerformTask();
 
             BOOST_REQUIRE(dec.GetBinaryOffset() == 0);
@@ -193,7 +198,7 @@ void unit_test_uuencode_multi()
 
         // second part
         {
-            nf::DecodeJob dec(read_file_buffer("test_data/1489406.jpg-002.uuencode"));
+            nf::DecodeContentTask dec(read_file_buffer("test_data/1489406.jpg-002.uuencode"));
             dec.PerformTask();
 
             BOOST_REQUIRE(dec.GetBinaryOffset() == 0);
@@ -210,7 +215,7 @@ void unit_test_uuencode_multi()
 
         // third part
         {
-            nf::DecodeJob dec(read_file_buffer("test_data/1489406.jpg-003.uuencode"));
+            nf::DecodeContentTask dec(read_file_buffer("test_data/1489406.jpg-003.uuencode"));
             dec.PerformTask();
 
             BOOST_REQUIRE(dec.GetBinaryOffset() == 0);

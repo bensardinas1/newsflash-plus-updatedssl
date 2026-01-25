@@ -35,7 +35,7 @@ namespace newsflash
 {
     // implement data decoding action. I.e. read input NNTP data and extract and decode it.
     // any ascii armored binary
-    class DecodeJob : public ThreadTask
+    class DecodeContentTask : public ThreadTask
     {
     public:
         enum class Encoding {
@@ -49,26 +49,26 @@ namespace newsflash
         class Exception : public std::exception
         {
         public:
-            Exception(const std::string& what) : what_(what)
+            explicit Exception(std::string what) : what_(std::move(what))
             {}
 
-            const char* what() const NOTHROW // noexcept
+            const char* what() const NOTHROW override // noexcept
             { return what_.c_str(); }
 
         private:
             std::string what_;
         };
 
-        // a soft error. the binary might be unsable
+        // a soft error. the binary might be unusable
         enum class Error {
             CrcMismatch,
             SizeMismatch
         };
 
-        DecodeJob(const Buffer& data);
-        DecodeJob(Buffer&& data);
+        explicit DecodeContentTask(const Buffer& data);
+        explicit DecodeContentTask(Buffer&& data);
 
-        virtual std::string Describe() const override;
+        std::string Describe() const override;
 
         // get text content buffer (if any)
 
@@ -128,7 +128,7 @@ namespace newsflash
         { return flags_.test(Flags::HasOffset); }
 
     private:
-        virtual void DoWork() override;
+        void DoWork() override;
         std::size_t decode_yenc_single(const char* data, std::size_t len);
         std::size_t decode_yenc_multi(const char* data, std::size_t len);
         std::size_t decode_uuencode_single(const char* data, std::size_t len);

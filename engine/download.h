@@ -32,7 +32,7 @@
 
 namespace newsflash
 {
-    class DecodeJob;
+    class DecodeContentTask;
 
     class ContentTask : public EngineTask
     {
