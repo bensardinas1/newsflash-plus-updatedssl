@@ -1153,9 +1153,9 @@ public:
         ui = ui_;
     }
 
-    transition Complete(Engine::State& state, std::unique_ptr<ThreadTask> act)
+    transition Complete(Engine::State& state, std::unique_ptr<ThreadTask> task)
     {
-        const auto size = act->size();
+        const auto size = task->size();
 
         assert(task->GetOwnerId() == ui_.task_id);
         assert(num_active_actions_ > 0);
@@ -1164,7 +1164,7 @@ public:
         num_active_actions_--;
         num_bytes_queued_ -= size;
 
-        LOG_D("Task ", ui_.task_id, " receiving action ", act->GetTaskId(), " (", act->Describe(), ")");
+        LOG_D("Task ", ui_.task_id, " receiving action ", task->GetTaskId(), " (", task->Describe(), ")");
         LOG_D("Task ", ui_.task_id, " num_active_actions ", num_active_actions_);
         LOG_D("Task ", ui_.task_id, " has ", num_bytes_queued_ / (1024.0*1024.0), " Mb queued");
 
@@ -1175,12 +1175,22 @@ public:
         error.resource = ui_.desc;
         try
         {
-            if (act->HasException())
-                act->rethrow();
+            if (task->HasBufferedLogger())
+            {
+                const auto* logger = dynamic_cast<const BufferLogger*>(task->GetLogger());
+                for (size_t i=0; i<logger->GetNumLines(); ++i)
+                {
+                    const auto& line = logger->GetLine(i);
+                    state.logger->Write(line);
+                }
+            }
 
-            std::vector<std::unique_ptr<ThreadTask>> actions;
-            task_->Complete(*act, actions);
-            act.reset();
+            if (task->HasException())
+                task->rethrow();
+
+            std::vector<std::unique_ptr<ThreadTask>> next_tasks;
+            task_->Complete(*task, next_tasks);
+            task.reset();
 
             const auto err = task_->GetErrors();
             if (err.test(EngineTask::Error::CrcMismatch))
@@ -1188,9 +1198,9 @@ public:
             if (err.test(EngineTask::Error::SizeMismatch))
                 ui_.error.set(ui::TaskDesc::Errors::Damaged);
 
-            for (auto& a : actions)
+            for (auto& task : next_tasks)
             {
-                DoAction(state, std::move(a));
+                DoAction(state, std::move(task));
             }
 
             return ChooseState(state);

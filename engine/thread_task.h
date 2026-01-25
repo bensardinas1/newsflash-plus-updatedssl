@@ -74,6 +74,11 @@ namespace newsflash
         // perform the action
         void PerformTask()
         {
+            if (!logger_)
+            {
+                logger_  = std::make_shared<BufferLogger>();
+            }
+
             Logger* prev = SetThreadLog(logger_.get());
             try
             {
@@ -125,6 +130,17 @@ namespace newsflash
         // set the logger object to be used for this action.
         void SetLogger(std::shared_ptr<Logger> out)
         { logger_ = std::move(out); }
+
+        bool HasBufferedLogger() const
+        {
+            if (dynamic_cast<BufferLogger*>(logger_.get()))
+                return true;
+            return false;
+        }
+        const Logger* GetLogger() const
+        {
+            return logger_.get();
+        }
 
     protected:
         virtual void DoWork() = 0;
