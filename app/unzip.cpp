@@ -77,10 +77,11 @@ Unzip::Unzip(const QString& executable) : mUnzipExecutable(executable)
 
 Unzip::~Unzip()
 {
-    ASSERT(!mProcess.isRunning() &&
-        "Unzip is still running. It should be either killed or waited to finish.");
-    ASSERT(!mCurrentArchive.isValid() &&
-        "There should be no current valid archive.");
+    if (mProcess.isRunning() || mCurrentArchive.isValid())
+    {
+        DEBUG("Unzip still active during destruction, forcing cleanup.");
+        stop();
+    }
 }
 
 void Unzip::extract(const Archive& arc, const Settings& settings)
@@ -150,6 +151,9 @@ void Unzip::extract(const Archive& arc, const Settings& settings)
         if (settings.overWriteExisting)
             args << "-aoa"; // overwrite all existing
         else args << "-aou"; // auto rename existing files
+
+        if (!arc.password.isEmpty())
+            args << ("-p" + arc.password);
 
         args << arc.file;
         executable = mUnzipExecutable;
@@ -280,10 +284,22 @@ void Unzip::onFinished()
 {
     DEBUG("Unzip finished. Archive %1", mCurrentArchive.file);
 
-    const auto error = mProcess.error();
+    const auto error    = mProcess.error();
+    const auto exitCode = mProcess.exitCode();
 
     if (error == Process::Error::None)
     {
+        // 7-Zip exit codes: 0=OK, 1=warning, 2=fatal error, 7=bad args
+        if (exitCode == 2 && !mCurrentArchive.password.isEmpty())
+        {
+            // 7-Zip uses generic fatal error for wrong password.
+            // If a password was supplied, report it specifically.
+            WARN("Unzip %1 wrong password or fatal error.", mCurrentArchive.file);
+            mCurrentArchive.message = "Wrong password or archive error.";
+            mCurrentArchive.state   = Archive::Status::Failed;
+        }
+        else
+        {
         const auto success = mErrors.isEmpty();
         if (success)
         {
@@ -313,6 +329,7 @@ void Unzip::onFinished()
                 ERROR("Failed to remove (cleanup) %1, %2", archive, file.error());
             }
         }
+        } // end else (exit code check)
     }
     else if (error == Process::Error::Crashed)
     {

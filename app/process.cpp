@@ -87,10 +87,10 @@ Process::Process()
 
 Process::~Process()
 {
-    const auto state = mProcess.state();
-    ASSERT(state == QProcess::NotRunning
-        && "Process is still running. It should be either stopped or waited to complete.");
-    Q_UNUSED(state);
+    if (mProcess.state() != QProcess::NotRunning)
+    {
+        kill();
+    }
 }
 
 void Process::start(const QString& executable,
@@ -104,6 +104,7 @@ void Process::start(const QString& executable,
     mStdOut.clear();
     mStdErr.clear();
     mError = Error::None;
+    mExitCode = 0;
     if (!logFile.isEmpty())
     {
         mLogFile.setFileName(logFile);
@@ -128,20 +129,17 @@ void Process::kill()
 {
     if (mProcess.state() == QProcess::Running)
     {
-        // terminate will ask the process nicely to exit
-        // QProcess::kill will just kill it forcefully.
-        // looks like terminate will send sigint and unrar obliges and exits cleanly.
-        // however this means that process's return state is normal exit.
-        // whereas unrar just dies.
         mProcess.blockSignals(true);
-        mProcess.kill();
 
-        // this can block the UI thread but unfortunately the
-        // QProcess has the issue that after calling kill
-        // properties such as state() != Running might not hold!
-        // we wait here until the process finishes and then
-        // QProcess should be in reasonable state again.
-        mProcess.waitForFinished();
+        // First try a graceful terminate (SIGTERM / WM_CLOSE).
+        // This lets the child clean up temp files.
+        mProcess.terminate();
+        if (!mProcess.waitForFinished(3000))
+        {
+            // Process didn't exit in time, force kill.
+            mProcess.kill();
+            mProcess.waitForFinished();
+        }
 
         if (mLogFile.isOpen())
         {
@@ -242,6 +240,8 @@ void Process::processFinished(int exitCode, QProcess::ExitStatus status)
     DEBUG("%1 finished exitCode: %2 exitStatus: %3",
         mExecutable, exitCode, status);
 
+    mExitCode = exitCode;
+
     processStdOut();
     processStdErr();
 
@@ -280,6 +280,7 @@ void Process::processError(QProcess::ProcessError error)
             break;
         case QProcess::WriteError:
             mError = Error::WriteError;
+            break;
         case QProcess::UnknownError:
             mError = Error::OtherError;
             break;

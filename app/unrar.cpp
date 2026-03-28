@@ -81,10 +81,11 @@ Unrar::Unrar(const QString& executable)
 
 Unrar::~Unrar()
 {
-    ASSERT(!mProcess.isRunning() &&
-        "Unrar is still running. It should be either killed or waited to finish.");
-    ASSERT(!mCurrentArchive.isValid() &&
-        "There should be no current valid archive.");
+    if (mProcess.isRunning() || mCurrentArchive.isValid())
+    {
+        DEBUG("Unrar still active during destruction, forcing cleanup.");
+        stop();
+    }
 }
 
 void Unrar::extract(const Archive& arc, const Settings& settings)
@@ -339,12 +340,29 @@ void Unrar::onFinished()
 {
     DEBUG("Unrar finished. Archive %1", mCurrentArchive.file);
 
-    const auto error = mProcess.error();
+    const auto error    = mProcess.error();
+    const auto exitCode = mProcess.exitCode();
 
     if (error == Process::Error::None)
     {
-        // we should have extracted at least 1 file
-        const auto success = mErrors.isEmpty() && !mCleanupSet.empty();
+        // Check exit code for specific failures first.
+        // UnRAR exit codes: 0=OK, 1=warning, 3=CRC, 11=wrong password
+        if (exitCode == 11) // RARX_BADPWD
+        {
+            WARN("Unrar %1 wrong password.", mCurrentArchive.file);
+            mCurrentArchive.message = "Wrong password.";
+            mCurrentArchive.state   = Archive::Status::Failed;
+        }
+        else if (exitCode == 3) // RARX_CRC
+        {
+            WARN("Unrar %1 CRC error (archive corrupt).", mCurrentArchive.file);
+            mCurrentArchive.message = mErrors.isEmpty() ? "CRC error (archive is corrupt)." : mErrors;
+            mCurrentArchive.state   = Archive::Status::Failed;
+        }
+        else
+        {
+            // we should have extracted at least 1 file
+            const auto success = mErrors.isEmpty() && !mCleanupSet.empty();
 
         if (success)
         {
@@ -380,6 +398,7 @@ void Unrar::onFinished()
                 }
             }
         }
+        } // end exit code else block
     }
     else if (error == Process::Error::Crashed)
     {

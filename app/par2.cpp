@@ -49,10 +49,11 @@ Par2::Par2(const QString& executable) : mPar2Executable(executable)
 
 Par2::~Par2()
 {
-    ASSERT(!mProcess.isRunning() &&
-        "Par2 is still running. It should be either killed or waited to finish.");
-    ASSERT(!mCurrentArchive.isValid() &&
-        "There should be no current valid archive.");
+    if (mProcess.isRunning() || mCurrentArchive.isValid())
+    {
+        DEBUG("Par2 still active during destruction, forcing cleanup.");
+        stop();
+    }
 }
 
 void Par2::recover(const Archive& arc, const Settings& s)
@@ -143,21 +144,22 @@ void Par2::onFinished()
 {
     DEBUG("par2 finished. Archive %1", mCurrentArchive.file);
 
-    const auto error = mProcess.error();
+    const auto error    = mProcess.error();
+    const auto exitCode = mProcess.exitCode();
 
     if (error == Process::Error::None)
     {
         const auto message = mParState.getMessage();
         const auto success = mParState.getSuccess();
         mCurrentArchive.message = message;
-        if (success)
+        if (success && exitCode == 0)
         {
             INFO("Par2 %1 success", mCurrentArchive.file);
             mCurrentArchive.state = Archive::Status::Success;
         }
         else
         {
-            WARN("Par2 %1 failed", mCurrentArchive.file);
+            WARN("Par2 %1 failed (exitCode: %2)", mCurrentArchive.file, exitCode);
             mCurrentArchive.state = Archive::Status::Failed;
         }
     }

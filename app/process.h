@@ -92,6 +92,9 @@ namespace app
         Error error() const
         { return mError; }
 
+        int exitCode() const
+        { return mExitCode; }
+
         // run the given executable and capture the output
         // into stdout and stderr as a series of text lines.
         // this function will block until the executable
@@ -123,6 +126,7 @@ namespace app
         QByteArray mStdErr;
         QFile mLogFile;
         Error mError = Error::None;
+        int mExitCode = 0;
         bool mKilled = false;
     private:
     };
