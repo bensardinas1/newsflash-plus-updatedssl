@@ -2528,7 +2528,7 @@ void Engine::SaveTasks(const std::string& file)
 {
 #if defined(WINDOWS_OS)
     // msvc specific extension..
-    std::ofstream out(utf8::decode(file), std::ios::out | std::ios::trunc);
+    std::ofstream out(utf8::decode(file).c_str(), std::ios::out | std::ios::trunc);
 #elif defined(LINUX_OS)
     std::ofstream out(file, std::ios::out | std::ios::trunc);
 #endif
@@ -2570,7 +2570,7 @@ void Engine::LoadTasks(const std::string& file)
 
 #if defined(WINDOWS_OS)
     // msvc extension
-    std::ifstream in(utf8::decode(file), std::ios::in);
+    std::ifstream in(utf8::decode(file).c_str(), std::ios::in);
 #elif defined(LINUX_OS)
     std::ifstream in(file, std::ios::in);
 #endif

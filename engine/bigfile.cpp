@@ -181,7 +181,7 @@ size_t bigfile::read(void* buff, size_t bytes)
 {
     assert(is_open());
     assert(buff);
-    assert(buff > 0 && bytes < ((size_t)-1));
+    assert(bytes > 0 && bytes < ((size_t)-1));
 
     DWORD dw = 0;
     if (ReadFile(pimpl_->file, buff, bytes, &dw, NULL) == 0)
@@ -194,7 +194,7 @@ void bigfile::flush()
 {
     assert(is_open());
 
-    if (FlushFileBuffers(pimpl_->file))
+    if (!FlushFileBuffers(pimpl_->file))
         throw std::system_error(GetLastError(), std::system_category(), "FlushFileBuffers failed");
 }
 

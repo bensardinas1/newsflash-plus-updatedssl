@@ -1,5 +1,10 @@
 <?php
   include("credentials.php");
-  $db = mysql_connect($DB_SERVER, $DB_USER, $DB_PASS) or die($DATABASE_UNAVAILABLE);
-  mysql_select_db($DB_NAME);
+  try {
+      $db = new PDO("mysql:host=$DB_SERVER;dbname=$DB_NAME;charset=utf8mb4", $DB_USER, $DB_PASS);
+      $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+      $db->setAttribute(PDO::ATTR_EMULATE_PREPARES, false);
+  } catch (PDOException $e) {
+      die($DATABASE_UNAVAILABLE);
+  }
 ?>

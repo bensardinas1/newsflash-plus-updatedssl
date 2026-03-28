@@ -27,6 +27,8 @@
 #  include <openssl/ssl.h>
 #include "newsflash/warnpop.h"
 
+#include <string>
+
 #include "sslcontext.h"
 #include "socket.h"
 
@@ -62,6 +64,7 @@ namespace newsflash
         virtual WaitHandle GetWaitHandle() const override;
         virtual WaitHandle GetWaitHandle(bool waitread, bool waitwrite) const override;
         virtual bool CanRecv() const override;
+        virtual void SetHostname(const std::string& hostname) override;
 
        SslSocket& operator=(SslSocket&& other);
     private:
@@ -81,6 +84,9 @@ namespace newsflash
 
         // SSL IO object
         BIO* bio_ = nullptr;
+
+        // hostname for SNI and certificate verification
+        std::string hostname_;
 
         sslcontext context_;
     };

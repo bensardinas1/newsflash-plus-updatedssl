@@ -62,7 +62,7 @@ Feedback::~Feedback()
 
 void Feedback::send()
 {
-    QUrl url("http://www.ensisoft.com/feedback.php");
+    QUrl url("https://www.ensisoft.com/feedback.php");
     url.addQueryItem("name", name_);
     url.addQueryItem("email", email_);
     url.addQueryItem("country", country_);

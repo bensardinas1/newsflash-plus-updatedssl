@@ -1,24 +1,47 @@
-Newsflash Plus
+Newsflash Plus (Updated SSL Fork)
 =========================
 
 The world's best binary news reader!
 
+> **This fork was updated with Claude (Anthropic) AI assistance.**  
+> It modernizes the security stack, upgrades OpenSSL from ~~1.0.2k~~ to 3.6.1,
+> hardens TLS, fixes critical bugs, and targets **Windows only** via MSYS2 MinGW-w64.  
+> **Linux contributions are very welcome** — see below.
+
 ![Screenshot](https://raw.githubusercontent.com/ensisoft/newsflash-plus/master/screens/newsflash-downloads-win32.png "downloading from Usenet")
+
+> **For a full list of every change, bug fix, and caveat, see
+> [docs/READTHIS-changes-Caveats.md](docs/READTHIS-changes-Caveats.md).**
 
 Build Configuration
 -------------------------
 
-Build configuration is defined as much as possible in the config file in this folder.
+~~Build configuration is defined as much as possible in the config file in this folder.
 It's assumed that either GCC is used for a linux based build and MSVC for windows.
-A C++11 compliant compiler is required.
+A C++11 compliant compiler is required.~~
 
-Only 64bit building is currently supported.
+~~Only 64bit building is currently supported.~~
 
-A new version of CMake is required (currently works with CMake >= 3.9.1).
+~~A new version of CMake is required (currently works with CMake >= 3.9.1).
 If you get an error about automoc producing files by the same name your CMake version is too old.
-See this link for more information:  
-https://public.kitware.com/Bug/view.php?id=12873
+See this link for more information:
+https://public.kitware.com/Bug/view.php?id=12873~~
 
+**Updated:**
+- **C++17** compiler required (GCC 15+ recommended)
+- **CMake >= 3.9.1**
+- Only **64-bit** building is supported
+- Currently builds on **Windows** with MSYS2 MinGW-w64 toolchain
+
+### Current Library Versions
+
+| Library | Version | Source |
+|---------|---------|--------|
+| OpenSSL | ~~1.0.2k~~ → 3.6.1 | MSYS2 system package |
+| Qt | 5.15.18 | MSYS2 system package |
+| Boost | 1.90.0 | MSYS2 system package |
+| zlib | system | MSYS2 system package |
+| GCC | 15.2.0 | MSYS2 MinGW-w64 |
 
 tools/par2cmdline
 -------------------------
@@ -37,43 +60,105 @@ http://www.rarlab.com/rar_add.htm
 
 third_party/zlib
 -------------------------
-The zlib compression library. The current version is 1.2.11  
+~~The zlib compression library. The current version is 1.2.11~~  
+No longer bundled on MinGW — uses system zlib from MSYS2.  
 http://www.zlib.net/
 
 third_party/openssl
 ------------------------
-Secure Socket Layer & Cryptography. Current version is 1.0.2k  
-https://www.openssl.org/source/
+~~Secure Socket Layer & Cryptography. Current version is 1.0.2k~~  
+~~https://www.openssl.org/source/~~  
+No longer built from bundled source. Uses **OpenSSL 3.6.1** from MSYS2 system packages.  
+The bundled 1.0.2k source is **EOL and insecure** — do not use it.  
+https://www.openssl.org/
 
-Building for Linux
+Building for Windows (MSYS2 MinGW-w64) — Current
 =======================
 
-You need to install the Qt5 and boost development libraries. 
+### Prerequisites
+
+Install MSYS2 from https://www.msys2.org/ (default: `C:\msys64`).
+
+Open the **MSYS2 MinGW64** shell and install all dependencies:
+
+```bash
+pacman -S mingw-w64-x86_64-gcc \
+          mingw-w64-x86_64-cmake \
+          mingw-w64-x86_64-make \
+          mingw-w64-x86_64-openssl \
+          mingw-w64-x86_64-qt5-base \
+          mingw-w64-x86_64-qt5-activeqt \
+          mingw-w64-x86_64-qt5-xmlpatterns \
+          mingw-w64-x86_64-boost \
+          mingw-w64-x86_64-ca-certificates
+```
+
+### Build
+
+From a Windows command prompt with MSYS2 on PATH:
+
+```cmd
+set PATH=C:\msys64\mingw64\bin;%PATH%
+
+git clone https://github.com/bensardinas1/newsflash-plus-updatedssl.git
+cd newsflash-plus-updatedssl
+mkdir build_d
+cd build_d
+cmake -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Debug ..
+mingw32-make -j%NUMBER_OF_PROCESSORS%
+```
+
+### Run
+
+```cmd
+newsflash.exe
+```
+
+Building for Linux — Needs Update
+=======================
+
+> **The Linux build path has not been tested with the current changes.**  
+> The instructions below are from the original project and may not work as-is.  
+> Contributions to restore and verify Linux builds are welcome!
+
+You need to install the Qt5 and boost development libraries, plus **OpenSSL 3.x dev headers**.
 
 Start by cloning the source
 
 ```
-   $ git clone https://github.com/ensisoft/newsflash-plus
-   $ cd newsflash-plus
+   $ git clone https://github.com/bensardinas1/newsflash-plus-updatedssl.git
+   $ cd newsflash-plus-updatedssl
    $ mkdir dist_d
    $ mkdir dist
 ```
 
-Build openssl.
+~~Build openssl.~~
 
-```
-    $ cd third_party/openssl
-    $ ./config --openssldir=`pwd`/sdk shared
-    $ make
-    $ make install
+~~$ cd third_party/openssl~~  
+~~$ ./config --openssldir=\`pwd\`/sdk shared~~  
+~~$ make~~  
+~~$ make install~~  
+
+Use your system's OpenSSL 3.x instead:
+
+```bash
+# Debian/Ubuntu:
+sudo apt install libssl-dev
+# Fedora:
+sudo dnf install openssl-devel
 ```
 
-Build zlib
+~~Build zlib~~
 
-```
-    $ cd third_party/zlib
-    $ cmake -G "Unix Makefiles"
-    $ make
+~~$ cd third_party/zlib~~  
+~~$ cmake -G "Unix Makefiles"~~  
+~~$ make~~  
+
+Use system zlib:
+
+```bash
+# Debian/Ubuntu:
+sudo apt install zlib1g-dev
 ```
 
 Build par2cmdline
@@ -87,7 +172,7 @@ Build par2cmdline
      $ sed -i 's/-g -O2/-O2/g' Makefile
      $ make
      $ cp par2 ~/coding/newsflash/dist
-     $cp par2 ~/coding/newsflash/dist_d
+     $ cp par2 ~/coding/newsflash/dist_d
 ```
 
 Build  unrar
@@ -99,10 +184,10 @@ Build  unrar
     $ cp unrar ~/coding/newsflash/dist_d
 ```
 
-Build Newsflash
+Build Newsflash (Linux)
 
 ```
-  $ cd newsflash_plus
+  $ cd newsflash-plus-updatedssl
   $ mkdir build_d
   $ cd build_d
   $ cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug ..
@@ -130,78 +215,77 @@ Comments about ICU.
 Both Qt and boost.regex depend on ICU. So if ICU updates both Qt and boost.regex needs to be rebuilt.
 
 
-Building for Windows
+Building for Windows (MSVC) — Legacy / Untested
 =======================
 
-NOTE About WindowsXP. To target WinXP we need /SUBSYSTEM:WINDOWS,5.01
-More information here:
+> **Note:** The MSVC build path below is from the original project and has **not been tested**
+> with the current changes. The recommended Windows build uses MSYS2 MinGW-w64 (see above).
+> ~~Windows XP support has been dropped~~ — minimum is now Windows Vista.
 
-http://www.tripleboot.org/?p=423  
-http://blogs.msdn.com/b/vcblog/archive/2012/10/08/windows-xp-targeting-with-c-in-visual-studio-2012.aspx?Redirected=true
+~~NOTE About WindowsXP. To target WinXP we need /SUBSYSTEM:WINDOWS,5.01~~  
+~~More information here:~~  
+~~http://www.tripleboot.org/?p=423~~  
+~~http://blogs.msdn.com/b/vcblog/archive/2012/10/08/windows-xp-targeting-with-c-in-visual-studio-2012.aspx?Redirected=true~~
 
-Currently only 64bit build is supported. You'll need Microsoft Visual Studio 2019.
-Once you've installed visual studio open the VS2019  x64 Native Tools Command Prompt.
+~~Currently only 64bit build is supported. You'll need Microsoft Visual Studio 2019.~~  
+~~Once you've installed visual studio open the VS2019  x64 Native Tools Command Prompt.~~
 
-Install Qt 5.12.6 (At the time of writing there's only MSVS2017 pre-built binaries)  
-https://download.qt.io/archive/qt/5.12/5.12.6/
+~~Install Qt 5.12.6 (At the time of writing there's only MSVS2017 pre-built binaries)~~  
+~~https://download.qt.io/archive/qt/5.12/5.12.6/~~
 
-About Qt and OpenSSL. The documentation at https://doc.qt.io/qt-5/ssl.html#import-and-export-restrictions
-says that the OpenSSL libraries are / can be installed by the Qt installer. This looks like a lie, the
-installer offers no option to install these. (Currently tried with qt-opensource-windows-x86-5.12.6.exe)
+~~About Qt and OpenSSL. The documentation at https://doc.qt.io/qt-5/ssl.html#import-and-export-restrictions~~  
+~~says that the OpenSSL libraries are / can be installed by the Qt installer. This looks like a lie, the~~  
+~~installer offers no option to install these. (Currently tried with qt-opensource-windows-x86-5.12.6.exe)~~
 
-Qt 5x requires OpenSSL 1.1.x (See QSsslSocket::sslLibraryBuildVersionString).
+~~Qt 5x requires OpenSSL 1.1.x (See QSsslSocket::sslLibraryBuildVersionString).~~
 
-The OpenSSL Wiki below provides links to sites hosting prebuilt OpenSSL binaries but they're all outdated
-OpensSL 1.0.0x versions.  
-https://wiki.openssl.org/index.php/Binaries
+~~The OpenSSL Wiki below provides links to sites hosting prebuilt OpenSSL binaries but they're all outdated~~  
+~~OpensSL 1.0.0x versions.~~  
+~~https://wiki.openssl.org/index.php/Binaries~~
 
-As of now there's this site:  https://kb.firedaemon.com/support/solutions/articles/4000121705
-that has a 1.1.x prebuilt library package that seem to work with Qt5.  
-https://mirror.firedaemon.com/OpenSSL/openssl-1.1.1e-dev.zip  
+~~As of now there's this site:  https://kb.firedaemon.com/support/solutions/articles/4000121705~~  
+~~that has a 1.1.x prebuilt library package that seem to work with Qt5.~~  
+~~https://mirror.firedaemon.com/OpenSSL/openssl-1.1.1e-dev.zip~~
 
-Install Boost.1.72.0 (currently only MSVS2017 pre-built binaries)
-https://sourceforge.net/projects/boost/files/boost-binaries/1.72.0/boost_1_72_0-msvc-14.2-64.exe/download
+~~Install Boost.1.72.0 (currently only MSVS2017 pre-built binaries)~~  
+~~https://sourceforge.net/projects/boost/files/boost-binaries/1.72.0/boost_1_72_0-msvc-14.2-64.exe/download~~
 
-Start by cloning the source
-```
-    $ git clone https://github.com/ensisoft/newslash-plus
-    $ cd newsflash-plus
-    $ mkdir dist_d
-    $ mkdir dist
-```
+~~Start by cloning the source~~
 
-Build openssl. Install ActivePerl.
+~~$ git clone https://github.com/ensisoft/newsflash-plus~~  
+~~$ cd newsflash-plus~~  
+~~$ mkdir dist_d~~  
+~~$ mkdir dist~~
 
-    http://www.activestate.com/activeperl
+~~Build openssl. Install ActivePerl.~~
 
-Note that openssl does not maintain source code compatibility between versions. And this applies
-even to minor versions. I.e. openssl 1.0.2 is source compatible with openssl 1.0.1
-Qt seems to want the 1.0.1x series.
+~~http://www.activestate.com/activeperl~~
 
-Also note that the because of the apparent INCOMPETENCE of OpenSSL developers we're locked to building
-the OpenSSL with MSVS2013. Several versions of OpenSSL starting from 1.0.1k to 1.0.2u fail to build
-with either MSVS2017 or MSVS2019. Sample of build (compile/link) errors:
+~~Note that openssl does not maintain source code compatibility between versions. And this applies~~  
+~~even to minor versions. I.e. openssl 1.0.2 is source compatible with openssl 1.0.1~~  
+~~Qt seems to want the 1.0.1x series.~~
 
-* .\crypto\bn\bn_exp.c(508): error C2065: 'BN_FLG_FIXED_TOP': undeclared identifier
-* .\crypto\bn\bn_exp.c(685): error C2065: 'BN_FLG_FIXED_TOP': undeclared identifier
-* .\crypto\bio\bss_file.c(434): error C2065: 'SYS_F_FFLUSH': undeclared identifier
- * fatal error LNK1112: module machine type 'x64' conflicts with target machine type 'x86'
+~~Also note that the because of the apparent INCOMPETENCE of OpenSSL developers we're locked to building~~  
+~~the OpenSSL with MSVS2013. Several versions of OpenSSL starting from 1.0.1k to 1.0.2u fail to build~~  
+~~with either MSVS2017 or MSVS2019. Sample of build (compile/link) errors:~~
 
-It takes a special kind of code and programmers to make C code fail like this across compilers.
+~~\*.\crypto\bn\bn_exp.c(508): error C2065: 'BN_FLG_FIXED_TOP': undeclared identifier~~  
+~~\*.\crypto\bn\bn_exp.c(685): error C2065: 'BN_FLG_FIXED_TOP': undeclared identifier~~  
+~~\*.\crypto\bio\bss_file.c(434): error C2065: 'SYS_F_FFLUSH': undeclared identifier~~  
+~~\* fatal error LNK1112: module machine type 'x64' conflicts with target machine type 'x86'~~
 
-So therefore the OpenSSL libraries are produced with MSVS2013.
+~~It takes a special kind of code and programmers to make C code fail like this across compilers.~~
 
-```
-    $ set PATH=%PATH%;"c:\Perl64\bin"
-    $ cd third_party/openssl
-    $ perl configure VC-WIN64A  --prefix="%cd%\sdk"
-    $ ms\do_win64a
-    $ ~~notepad ms\ntdll.mak~~
-    $ notepad ms\nt.mak
-      * replace LFLAGS /debug with /release
-    $ nmake -f ms\nt.mak
-    $ nmake -f ms\nt.mak install
-```
+~~So therefore the OpenSSL libraries are produced with MSVS2013.~~
+
+~~$ set PATH=%PATH%;"c:\Perl64\bin"~~  
+~~$ cd third_party/openssl~~  
+~~$ perl configure VC-WIN64A  --prefix="%cd%\sdk"~~  
+~~$ ms\do_win64a~~  
+~~$ notepad ms\nt.mak~~  
+~~\* replace LFLAGS /debug with /release~~  
+~~$ nmake -f ms\nt.mak~~  
+~~$ nmake -f ms\nt.mak install~~
 
 Build zlib
 

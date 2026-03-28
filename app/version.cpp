@@ -26,9 +26,13 @@
 #  include <boost/version.hpp>
 #  include <QStringList>
 #  include <QString>
-#  include <QRegExp>
+#  include <QRegularExpression>
 #  include <QSslSocket>
+#if defined(__MINGW32__)
+#  include <zlib.h>
+#else
 #  include <zlib/zlib.h>
+#endif
 #include "newsflash/warnpop.h"
 
 
@@ -45,9 +49,10 @@ namespace app
 bool checkVersionUpdate(const QString& current, const QString& latest)
 {
     // match version string like "3.3.0b7" where the b7 (beta 7) is optional
-    const QRegExp regex("(\\d+).(\\d+).(\\d+)(b(\\d+))?");
+    const QRegularExpression regex("(\\d+).(\\d+).(\\d+)(b(\\d+))?");
 
-    if (regex.indexIn(current) == -1)
+    auto match = regex.match(current);
+    if (!match.hasMatch())
         return false;
 
     struct version {
@@ -58,19 +63,20 @@ bool checkVersionUpdate(const QString& current, const QString& latest)
     };
 
     version cur  = {};
-    cur.major    = regex.cap(1).toInt();
-    cur.minor    = regex.cap(2).toInt();
-    cur.revision = regex.cap(3).toInt();
-    cur.beta     = regex.cap(5).toInt();
+    cur.major    = match.captured(1).toInt();
+    cur.minor    = match.captured(2).toInt();
+    cur.revision = match.captured(3).toInt();
+    cur.beta     = match.captured(5).toInt();
 
-    if (regex.indexIn(latest) == -1)
+    match = regex.match(latest);
+    if (!match.hasMatch())
         return false;
 
     version other  = {};
-    other.major    = regex.cap(1).toInt();
-    other.minor    = regex.cap(2).toInt();
-    other.revision = regex.cap(3).toInt();
-    other.beta     = regex.cap(5).toInt();
+    other.major    = match.captured(1).toInt();
+    other.minor    = match.captured(2).toInt();
+    other.revision = match.captured(3).toInt();
+    other.beta     = match.captured(5).toInt();
 
     if (other.major > cur.major)
         return true;

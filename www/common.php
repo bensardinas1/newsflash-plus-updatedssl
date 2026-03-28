@@ -27,28 +27,27 @@
           return gethostbyaddr($ip);
       return "unknown";
   }
-  
-  function sql_string($str)
+
+  function sanitize_input($str)
   {
       if (isset($str))
-          return "'" . mysql_real_escape_string(strip_tags($str)) . "'";
-      // this is good for SQL embedding
-      return "NULL";
+          return strip_tags($str);
+      return null;
   }
-  
-  function sql_check_spam($tablename, $host)
+
+  function pdo_check_spam($db, $tablename, $host)
   {
+      // Only allow known table names to prevent SQL injection via table name
+      $allowed_tables = array('feedback', 'newsflash2');
+      if (!in_array($tablename, $allowed_tables, true))
+          return false;
+
       // check for flooding. if there are more than 2 messages from
       // the same host within the past 5 minutes posting is ignored
-      $records = mysql_query("SELECT id FROM $tablename WHERE UNIX_TIMESTAMP(date) >= UNIX_TIMESTAMP(NOW()) - 300 AND host like $host") or die($DATABASE_ERROR);
-      $count   = 0;
-      while ($row = mysql_fetch_array($records))
-      {
-          $count = $count + 1;
-          if ($count == 2)
-              return True;
-      }
-      return False;
+      $stmt = $db->prepare("SELECT id FROM $tablename WHERE UNIX_TIMESTAMP(date) >= UNIX_TIMESTAMP(NOW()) - 300 AND host LIKE :host");
+      $stmt->execute(array(':host' => $host));
+      $count = $stmt->rowCount();
+      return ($count >= 2);
   }
-  
+
 ?>

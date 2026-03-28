@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 3.9.1)
 
 project(NewsflashPlus)
 
@@ -24,7 +24,9 @@ cmake -G \"Unix Makefiles\" -DCMAKE_BUILD_TYPE=Release
 endif(NOT CMAKE_BUILD_TYPE)
 
 # Unfortunately we need boost...
-set(Boost_USE_STATIC_LIBS ON)
+if (NOT MINGW)
+    set(Boost_USE_STATIC_LIBS ON)
+endif()
 if(WIN32)
     set(BOOST_ROOT $ENV{BOOST_ROOT})
     if (NOT BOOST_ROOT)
@@ -106,7 +108,13 @@ endif()
 
 # expected location on win to find Qt
 if (WIN32)
-    set(CMAKE_PREFIX_PATH "C:/Qt/5.12.6/msvc2017_64")
+    if (MINGW AND EXISTS "C:/msys64/mingw64")
+        set(CMAKE_PREFIX_PATH "C:/msys64/mingw64")
+    elseif(EXISTS "C:/Qt/5.15.2/msvc2019_64")
+        set(CMAKE_PREFIX_PATH "C:/Qt/5.15.2/msvc2019_64")
+    else()
+        set(CMAKE_PREFIX_PATH "C:/Qt/5.12.6/msvc2017_64")
+    endif()
 endif()
 
 find_package(Qt5Widgets)
@@ -130,8 +138,12 @@ set(CMAKE_AUTORCC ON)
 
 # generic include directories (same for each platform)
 include_directories(BEFORE "${CMAKE_CURRENT_LIST_DIR}/third_party")
-include_directories(BEFORE "${CMAKE_CURRENT_LIST_DIR}/third_party/openssl/sdk/include")
-include_directories(BEFORE "${CMAKE_CURRENT_LIST_DIR}/third_party/zlib")
+if (NOT MINGW)
+    include_directories(BEFORE "${CMAKE_CURRENT_LIST_DIR}/third_party/openssl/sdk/include")
+    include_directories(BEFORE "${CMAKE_CURRENT_LIST_DIR}/third_party/zlib")
+else()
+    # MinGW/MSYS2: use system zlib headers
+endif()
 include_directories(BEFORE "${Boost_INCLUDE_DIRS}")
 # UI generated files do a global include for custom widgets such as the pieview.
 # so we need to add the gui folder to the include list.
@@ -150,8 +162,10 @@ elseif(UNIX)
 endif()
 
 # generic link directories (same for each platform)
-link_directories("${CMAKE_CURRENT_LIST_DIR}/third_party/openssl/sdk/lib")
-link_directories("${CMAKE_CURRENT_LIST_DIR}/third_party/boost_1_51_0/sdk/lib")
+if (NOT MINGW)
+    link_directories("${CMAKE_CURRENT_LIST_DIR}/third_party/openssl/sdk/lib")
+    link_directories("${CMAKE_CURRENT_LIST_DIR}/third_party/boost_1_51_0/sdk/lib")
+endif()
 
 # platform specific link dirs
 if (WIN32)
@@ -160,10 +174,16 @@ elseif(UNIX)
     link_directories("${CMAKE_CURRENT_LIST_DIR}/third_party/zlib/")
 endif()
 
-if (WIN32)
-    set(LIB_OPENSSL  "ssleay32")
-    set(LIB_CRYPTO   "libeay32")
-    set(LIB_Z        "zlib") # note that in a very gay fashion the lib is zlib.lib and the library is zlib1.dll
+if (MINGW)
+    # MSYS2 MinGW uses ssl/crypto naming (pkg-config style)
+    set(LIB_OPENSSL  "ssl")
+    set(LIB_CRYPTO   "crypto")
+    set(LIB_Z        "z")
+elseif(WIN32)
+    # MSVC uses libssl/libcrypto naming
+    set(LIB_OPENSSL  "libssl")
+    set(LIB_CRYPTO   "libcrypto")
+    set(LIB_Z        "zlib")
 elseif(UNIX)
     set(LIB_OPENSSL  "ssl.a")
     set(LIB_CRYPTO   "crypto.a")
@@ -172,11 +192,16 @@ endif()
 
 # compiler specific compiler & linker flags
 if (CMAKE_COMPILER_IS_GNUCC)
-    # we need -rdynamic for backtrace and backtrace_symbols
-    # in order to dump a stacktrace from the ASSERT macro.
-    set(CMAKE_EXE_LINKER_FLAGS    "${CMAKE_EXE_LINKER_FLAGS}    -rdynamic -pthread -ldl")
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -rdynamic -pthread -ldl")
-    set(CMAKE_CXX_STANDARD 14)
+    set(CMAKE_CXX_STANDARD 17)
+    if (MINGW)
+        # MinGW on Windows: no -rdynamic or -ldl
+        set(CMAKE_EXE_LINKER_FLAGS    "${CMAKE_EXE_LINKER_FLAGS}    -pthread")
+        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -pthread")
+    else()
+        # Linux GCC: -rdynamic for backtrace, -ldl for dlopen
+        set(CMAKE_EXE_LINKER_FLAGS    "${CMAKE_EXE_LINKER_FLAGS}    -rdynamic -pthread -ldl")
+        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -rdynamic -pthread -ldl")
+    endif()
 elseif(MSVC)
     # /Zc:wchar_t  treats wchar_t as a native type
     # /Zc:wchar_t- treats wchar_t as a typedef for unsigned short.
@@ -221,15 +246,14 @@ add_executable(smtpclient_test third_party/smtpclient/example/main.cpp)
 target_link_libraries(smtpclient_test smtpclient Qt5::Core Qt5::Widgets)
 
 # We have a problem with libssl being a conflicting dependency between
-# our engine and Qt5. Qt5 uses libssl 1.1.x and we're still on libssl 1.0.x.
-# These are not binary compatible.
+# our engine and Qt5. Qt5 uses its own libssl and we use ours.
 # Having all the symbols available in the engine library will lead to problems
 # when these two libraries are loaded in the process.
-# In order to workout this problem we take the socket code and build it into
+# In order to work around this problem we take the socket code and build it into
 # a library and tell the linker to hide all symbols *except* for
 # MakeNewsflashSocket which is public. Then the rest of the engine code
 # simply uses this API to create a socket and libssl stays hidden.
-# Extern C is just to simplify  specificing the symbol name (no mangling)
+# Extern C is just to simplify specifying the symbol name (no mangling)
 # in the linker file
 add_library(socketlib SHARED
     engine/socket.cpp
@@ -244,7 +268,10 @@ add_library(socketlib SHARED
 target_link_libraries(socketlib PRIVATE
     ${LIB_OPENSSL}
     ${LIB_CRYPTO})
-if (CMAKE_COMPILER_IS_GNUCC)
+if (MINGW)
+    target_link_libraries(socketlib PRIVATE ws2_32 crypt32 dbghelp)
+    target_link_options(socketlib PRIVATE "-Wl,--version-script=${CMAKE_CURRENT_LIST_DIR}/engine/linux_linker_openssl_war.version")
+elseif(CMAKE_COMPILER_IS_GNUCC)
     target_link_options(socketlib PRIVATE "-Wl,--version-script=${CMAKE_CURRENT_LIST_DIR}/engine/linux_linker_openssl_war.version")
 endif()
 target_compile_definitions(socketlib PRIVATE NEWSFLASH_BUILD_SOCKET_LIB)
@@ -280,6 +307,9 @@ target_link_libraries(engine PUBLIC
     socketlib
     ${Boost_LIBRARIES}
     ${LIB_Z})
+if (MINGW)
+    target_link_libraries(engine PUBLIC ws2_32 dbghelp user32)
+endif()
 
 file(GLOB APP_SOURCE  app/*.h app/*.cpp)
 file(GLOB GUI_SOURCE  gui/*.h gui/*.cpp gui/*.ui)
@@ -323,15 +353,22 @@ if (MSVC)
     #
     # WINDOWS, creates a win32 application that uses WinMain, no console.
     # CONSOLE, creates a console application that uses main(), system created console.
-    # 5.2 = Win XP 64bit version
+    # 6.0 = Windows Vista / Server 2008 (minimum modern target)
     if (CMAKE_BUILD_TYPE MATCHES "Release")
-        set_target_properties(newsflash PROPERTIES LINK_FLAGS "/SUBSYSTEM:WINDOWS,5.2")
+        set_target_properties(newsflash PROPERTIES LINK_FLAGS "/SUBSYSTEM:WINDOWS,6.0")
         target_link_libraries(newsflash Qt5::WinMain)
     elseif(CMAKE_BUILD_TYPE MATCHES "Debug")
-        set_target_properties(newsflash PROPERTIES LINK_FLAGS "/SUBSYSTEM:CONSOLE,5.2")
+        set_target_properties(newsflash PROPERTIES LINK_FLAGS "/SUBSYSTEM:CONSOLE,6.0")
     endif()
 
     target_link_libraries(newsflash appcore Qt5::AxContainer)
+elseif(MINGW)
+    if (CMAKE_BUILD_TYPE MATCHES "Release")
+        # -mwindows: link as GUI app (no console window)
+        set_target_properties(newsflash PROPERTIES LINK_FLAGS "-mwindows")
+    endif()
+    target_link_libraries(newsflash appcore Qt5::AxContainer
+        ws2_32 dbghelp user32 shell32 gdi32 advapi32 shlwapi crypt32)
 else()
     target_link_libraries(newsflash appcore)
 endif()

@@ -3,37 +3,37 @@
   include("database.php");
   include("credentials.php");
 
-  $type     = sql_string($_REQUEST['type']);
-  $name     = sql_string($_REQUEST['name']);
-  $email    = sql_string($_REQUEST['email']);
-  $country  = sql_string($_REQUEST['country']);
-  $text     = sql_string($_REQUEST['text']);
-  $version  = sql_string($_REQUEST['version']);
-  $platform = sql_string($_REQUEST['platform']);
-  $host     = sql_string(get_host_name());
+  $type     = sanitize_input($_REQUEST['type']);
+  $name     = sanitize_input($_REQUEST['name']);
+  $email    = sanitize_input($_REQUEST['email']);
+  $country  = sanitize_input($_REQUEST['country']);
+  $text     = sanitize_input($_REQUEST['text']);
+  $version  = sanitize_input($_REQUEST['version']);
+  $platform = sanitize_input($_REQUEST['platform']);
+  $host     = sanitize_input(get_host_name());
   $tmpfile  = $_FILES['attachment']['tmp_name'];
   $filename = $_FILES['attachment']['name'];
 
-  switch ($type) {
-      case sql_string($TYPE_NEGATIVE_FEEDBACK): 
+  switch (intval($type)) {
+      case $TYPE_NEGATIVE_FEEDBACK:
           $typename = "Feedback :(";
           break;
-      case sql_string($TYPE_POSITIVE_FEEDBACK): 
+      case $TYPE_POSITIVE_FEEDBACK:
           $typename = "Feedback :)";
           break;
-      case sql_string($TYPE_NEUTRAL_FEEDBACK):  
+      case $TYPE_NEUTRAL_FEEDBACK:
           $typename = "Feedback :|";
           break;
-      case sql_string($TYPE_BUG_REPORT):        
+      case $TYPE_BUG_REPORT:
           $typename = "Bug report";
           break;
-      case sql_string($TYPE_FEATURE_REQUEST):   
+      case $TYPE_FEATURE_REQUEST:
           $typename = "Feature request";
           break;
-      case sql_string($TYPE_LICENSE_REQUEST):
+      case $TYPE_LICENSE_REQUEST:
           $typename = "License request";
           break;
-  }  
+  }
 
   if (!strlen($typename))
       die($ERROR_QUERY_PARAMS . " type");
@@ -42,15 +42,24 @@
   if(!strlen($text))
       die($ERROR_QUERY_PARAMS . " text");
 
-  if (sql_check_spam("feedback", $host))
+  if (pdo_check_spam($db, "feedback", $host))
       die($DIRTY_ROTTEN_SPAMMER);
-  
-  $insert = "INSERT INTO feedback " .
-            "( type,   name, email,  host,  country,  text,  version,  platform) VALUES " .
-            "($type, $name, $email, $host, $country, $text, $version, $platform)";
-  mysql_query($insert, $db) or die($DATABASE_ERROR);
-  $id = mysql_insert_id($db);
-  mysql_close($db);
+
+  $stmt = $db->prepare(
+      "INSERT INTO feedback (type, name, email, host, country, text, version, platform) " .
+      "VALUES (:type, :name, :email, :host, :country, :text, :version, :platform)"
+  );
+  $stmt->execute(array(
+      ':type'     => $type,
+      ':name'     => $name,
+      ':email'    => $email,
+      ':host'     => $host,
+      ':country'  => $country,
+      ':text'     => $text,
+      ':version'  => $version,
+      ':platform' => $platform,
+  ));
+  $id = $db->lastInsertId();
 
   // create and send email notification
   $subject = "[NEW FEEDBACK - ID: $id]";
@@ -58,31 +67,33 @@
              "ID: $id\n" .
              "Type: $typename\n" .
              "Name: $name\n" .
-             "Email: $email\n" . 
+             "Email: $email\n" .
              "Country: $country\n" .
              "Host: $host\n" .
              "Version: $version\n" .
              "Platform: $platform\n\n" .
-             "$text"; 
+             "$text";
 
   if (strlen($email))
       $headers = "From: $email\r\nReply-To: $email\r\n";
 
   if (strlen($tmpfile))
   {
-      //$mimetype    = mime_content_type($tmpfile);
-      $mimetype    = shell_exec("file -bi " . $tmpfile);
-      $random_hash = md5('r', time());
+      // Use finfo instead of shell_exec to avoid command injection
+      $finfo    = new finfo(FILEINFO_MIME_TYPE);
+      $mimetype = $finfo->file($tmpfile);
+      $random_hash = bin2hex(random_bytes(16));
       $boundary    = "boundary-$random_hash";
+      $safe_filename = htmlspecialchars(basename($filename), ENT_QUOTES, 'UTF-8');
       $attachment  = chunk_split(base64_encode(file_get_contents($tmpfile)));
       $body =  "This is a multi-part message in MIME format.\n\n" .
                "--$boundary\n" .
                "Content-Type: text/plain; charset=utf-8\n\n" .
                "$text\n" .
                "--$boundary\n" .
-               "Content-Type: $mimetype; Name=\"$filename\"\n" .
+               "Content-Type: $mimetype; Name=\"$safe_filename\"\n" .
                "Content-Transfer-Encoding: base64\n" .
-               "Content-Disposition: attachment; filename=\"$filename\"\n\n" .
+               "Content-Disposition: attachment; filename=\"$safe_filename\"\n\n" .
                "$attachment\n" .
                "--$boundary--" ;
 
@@ -101,6 +112,5 @@
       // todo: transactional semantics
   }
   echo $SUCCESS;
-  
-?>
 
+?>

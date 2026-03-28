@@ -60,7 +60,7 @@ bool MovieDatabase::beginLookup(const QString& title, const QString& releaseYear
         return false;
     }
 
-    QUrl url("http://www.omdbapi.com/");
+    QUrl url("https://www.omdbapi.com/");
     url.addQueryItem("t", title);
     url.addQueryItem("plot", "short");
     url.addQueryItem("r", "json");
@@ -79,7 +79,7 @@ bool MovieDatabase::beginLookup(const QString& title, const QString& releaseYear
 
 bool MovieDatabase::testLookup(const QString& testKey, const QString& testTitle)
 {
-    QUrl url("http://www.omdbapi.com/");
+    QUrl url("https://www.omdbapi.com/");
     url.addQueryItem("t", testTitle);
     url.addQueryItem("y", "");
     url.addQueryItem("plot", "short");

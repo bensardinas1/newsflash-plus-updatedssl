@@ -32,7 +32,7 @@ QString generate_fingerprint(const QString& seed)
 {
     QString str = QString("seed:%1").arg(seed);
 
-    QByteArray hash = QCryptographicHash::hash(str.toUtf8(), QCryptographicHash::Md5).toHex();
+    QByteArray hash = QCryptographicHash::hash(str.toUtf8(), QCryptographicHash::Sha256).toHex();
 
     return QString::fromLatin1(hash.constData(), hash.size());
 }
@@ -61,7 +61,7 @@ QString generate_keycode(const QString& fingerprint)
 {
     QString str = QString("keycode:%1").arg(fingerprint);
 
-    QByteArray hash = QCryptographicHash::hash(str.toUtf8(), QCryptographicHash::Md5).toHex();
+    QByteArray hash = QCryptographicHash::hash(str.toUtf8(), QCryptographicHash::Sha256).toHex();
 
     return QString::fromLatin1(hash.constData(), hash.size());
 }
@@ -85,11 +85,6 @@ bool verify_code(const QString& keycode)
         if (generate_keycode(fingerprint) == keycode)
             return true;
     }
-    // this is our backdoor for cases where the code is buggy for whatever reason
-    // and it won't work for people who have registered.
-    // this is not optimal but better than disappointing people
-    if (keycode == BACKDOOR)
-        return true;
 
     return false;
 }

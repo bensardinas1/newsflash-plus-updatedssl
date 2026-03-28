@@ -396,6 +396,12 @@ int run(QtSingleApplication& qtinstance)
     win.startup();
     win.show();
 
+    // Process any file arguments passed on the command line (e.g. NZB files
+    // opened via file association). Skip argv[0] which is the executable path.
+    const auto& initialArgs = qtinstance.arguments();
+    for (int i = 1; i < initialArgs.size(); ++i)
+        win.messageReceived(initialArgs[i]);
+
     auto ret = qtinstance.exec();
 
     // its important to keep in mind that the modules and widgets

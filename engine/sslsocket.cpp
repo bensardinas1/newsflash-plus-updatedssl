@@ -29,9 +29,11 @@
 #  include <sys/socket.h>
 #endif
 
+#include <openssl/opensslv.h>
 #include <openssl/err.h>
 #include <openssl/crypto.h>
 #include <openssl/opensslconf.h>
+#include <openssl/x509v3.h>
 #ifndef OPENSSL_THREADS
 #  error need openssl with thread support
 #endif
@@ -344,6 +346,11 @@ bool SslSocket::CanRecv() const
     return WaitForSingleHandle(handle, std::chrono::milliseconds(0));
 }
 
+void SslSocket::SetHostname(const std::string& hostname)
+{
+    hostname_ = hostname;
+}
+
 SslSocket& SslSocket::operator=(SslSocket&& other)
 {
     if (&other == this)
@@ -355,6 +362,7 @@ SslSocket& SslSocket::operator=(SslSocket&& other)
     std::swap(handle_, other.handle_);
     std::swap(ssl_, other.ssl_);
     std::swap(bio_, other.bio_);
+    std::swap(hostname_, other.hostname_);
     return *this;
 }
 
@@ -421,6 +429,20 @@ void SslSocket::complete_secure_connect()
     ssl_ = SSL_new(ctx);
     if (!ssl_)
         throw std::runtime_error("SSL_new failed");
+
+    // Set SNI (Server Name Indication) so virtual-hosted servers
+    // can present the correct certificate.
+    if (!hostname_.empty())
+    {
+        SSL_set_tlsext_host_name(ssl_, hostname_.c_str());
+
+        // Enable hostname verification. Available in OpenSSL 1.0.2+.
+#if OPENSSL_VERSION_NUMBER >= 0x10002000L
+        X509_VERIFY_PARAM* param = SSL_get0_param(ssl_);
+        X509_VERIFY_PARAM_set_hostflags(param, X509_CHECK_FLAG_NO_PARTIAL_WILDCARDS);
+        X509_VERIFY_PARAM_set1_host(param, hostname_.c_str(), hostname_.size());
+#endif
+    }
 
     // create new IO object
     bio_ = BIO_new_socket(socket_, BIO_NOCLOSE);

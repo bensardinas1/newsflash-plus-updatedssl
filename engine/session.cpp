@@ -21,7 +21,11 @@
 #include "newsflash/config.h"
 
 #include "newsflash/warnpush.h"
+#if defined(__MINGW32__)
+#  include <zlib.h>
+#else
 #  include <zlib/zlib.h>
+#endif
 #include "newsflash/warnpop.h"
 
 #include "assert.h"

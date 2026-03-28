@@ -25,7 +25,10 @@
 #include "newsflash/warnpop.h"
 
 #include <condition_variable>
+#include <openssl/opensslv.h>
 #include <openssl/err.h>
+#include <openssl/dh.h>
+#include <openssl/pem.h>
 #include <functional>
 #include <thread>
 #include <chrono>
@@ -135,7 +138,11 @@ void ssl_server_main(int port)
 
 
     // create new SSL server context.
+#if OPENSSL_VERSION_NUMBER >= 0x10100000L
+    SSL_CTX* ctx = SSL_CTX_new(TLS_server_method());
+#else
     SSL_CTX* ctx = SSL_CTX_new(SSLv23_server_method());
+#endif
     BOOST_REQUIRE(ctx);
 
     // create file bio...
@@ -151,8 +158,7 @@ void ssl_server_main(int port)
     // the actual key is generated on the fly and the parameters
     // coming from the dh file can be reused.
     BOOST_REQUIRE(SSL_CTX_set_tmp_dh(ctx, dh) == 1);
-    //BOOST_REQUIRE(SSL_CTX_set_tmp_rsa(ctx, rsa) == 1);
-    BOOST_REQUIRE(SSL_CTX_set_cipher_list(ctx, "ALL") == 1);
+    BOOST_REQUIRE(SSL_CTX_set_cipher_list(ctx, "HIGH:!aNULL:!eNULL:!MD5:!RC4:!3DES:!DES:!EXPORT") == 1);
 
     SSL* ssl = SSL_new(ctx);
     BIO* bio = BIO_new_socket(fd, BIO_NOCLOSE);

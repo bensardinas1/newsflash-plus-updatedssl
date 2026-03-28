@@ -26,7 +26,7 @@
 #  include <QtNetwork/QNetworkRequest>
 #  include <QtNetwork/QNetworkReply>
 #  include <QUrl>
-#  include <QRegExp>
+#  include <QRegularExpression>
 #include "newsflash/warnpop.h"
 
 #include "tools/keygen/keygen.h"
@@ -58,7 +58,7 @@ void Telephone::callhome()
     const auto& fingerprint = keygen::generate_fingerprint();
 
     QUrl url;
-    url.setUrl("http://ensisoft.com/callhome.php");
+    url.setUrl("https://ensisoft.com/callhome.php");
     url.addQueryItem("version", NEWSFLASH_VERSION);
     url.addQueryItem("platform", platform);
     url.addQueryItem("fingerprint", fingerprint);
@@ -85,8 +85,8 @@ void Telephone::onFinished(QNetworkReply& reply)
 
     // todo: error code checking coming from the site
 
-    latest.remove(QRegExp("\\n"));
-    latest.remove(QRegExp("\\r"));
+    latest.remove(QRegularExpression("\\n"));
+    latest.remove(QRegularExpression("\\r"));
 
     const bool newVersion = checkVersionUpdate(NEWSFLASH_VERSION, latest);
     DEBUG("Latest available version %1", latest);

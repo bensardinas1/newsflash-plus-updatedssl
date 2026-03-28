@@ -33,8 +33,8 @@
   #define COMPILER_NAME    "msvc"
   #define COMPILER_VERSION _MSC_FULL_VER
 
-  // minimum supported version, windows Server 2003 and Windows XP
-  #define _WIN32_WINNT 0x0501
+  // minimum supported version, Windows Vista / Server 2008
+  #define _WIN32_WINNT 0x0600
 
   // exclude some stuff we don't need
   #define WIN32_LEAN_AND_MEAN
@@ -98,7 +98,18 @@
     #define X86_64
   #endif
   #define __GCC__
-  #define LINUX_OS
+  #if defined(_WIN32) || defined(__MINGW32__)
+    #define WINDOWS_OS
+    #ifndef _WIN32_WINNT
+      #define _WIN32_WINNT 0x0600
+    #endif
+    #define WIN32_LEAN_AND_MEAN
+    #define NOMINMAX
+    #define UNICODE
+    #undef ERROR
+  #else
+    #define LINUX_OS
+  #endif
   #define COMPILER_NAME "GCC"
   #define COMPILER_VERSION __GNUC__ * 10000 + __GNUC_MINOR__ * 100 + __GNUC_PATCHLEVEL__
   #define NOTHROW  noexcept
@@ -142,8 +153,8 @@
 #define NEWSFLASH_VERSION   "4.3.0"
 //#define NEWSFLASH_VERSION   "master" // remember to edit!
 #define NEWSFLASH_COPYRIGHT "Copyright (c) Sami V\303\244is\303\244nen 2005-2019"
-#define NEWSFLASH_WEBSITE   "http://www.ensisoft.com"
-#define NEWSFLASH_DONATE_URL "http://www.ensisoft.com/donate"
+#define NEWSFLASH_WEBSITE   "https://www.ensisoft.com"
+#define NEWSFLASH_DONATE_URL "https://www.ensisoft.com/donate"
 
 #ifdef NDEBUG
 #  define NEWSFLASH_TITLE "Newsflash Plus"

@@ -26,6 +26,7 @@
 
 #include <system_error>
 #include <memory>
+#include <string>
 
 #include "socketapi.h"
 #include "waithandle.h"
@@ -71,6 +72,11 @@ namespace newsflash
 
         // returns true if the socket buffer has more data for immediate read.
         virtual bool CanRecv() const = 0;
+
+        // Set the hostname for TLS Server Name Indication (SNI) and
+        // certificate hostname verification. Called before CompleteConnect.
+        // Default implementation is a no-op (for non-TLS sockets).
+        virtual void SetHostname(const std::string& hostname) { (void)hostname; }
     protected:
     private:
     };
@@ -92,11 +98,10 @@ namespace newsflash
 #endif
 
 // We have a problem with libssl being a conflicting dependency between
-// our engine and Qt5. Qt5 uses libssl 1.1.x and we're still on libssl 1.0.x.
-// These are not binary compatible.
+// our engine and Qt5. Qt5 uses its own libssl and we use ours.
 // Having all the symbols available in the engine library will lead to problems
 // when these two libraries are loaded in the process.
-// In order to workout this problem we take the socket code and build it into
+// In order to work around this problem we take the socket code and build it into
 // a library and tell the linker to hide all symbols *except* for
 // MakeNewsflashSocket which is public. Then the rest of the engine code
 // simply uses this API to create a socket and libssl stays hidden.

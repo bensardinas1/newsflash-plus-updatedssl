@@ -169,6 +169,9 @@ public:
         // first begin ConnectionImpl (async)
         socket->BeginConnect(addr, port);
 
+        // Set hostname for TLS SNI and certificate verification
+        socket->SetHostname(state_->hostname);
+
         // wait for completion or cancellation event.
         // when an async socket connect is performed the socket will become writeable
         // once the ConnectionImpl is established.

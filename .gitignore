@@ -7,3 +7,42 @@ dist
 dist_d
 build
 build_d
+release
+
+# Build artifacts
+*.zip
+*.exe
+*.log
+configure_log.txt
+winget_*.txt
+
+# Security-sensitive files
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+*.csr
+*.jks
+*.keystore
+
+# Secrets / credentials
+secret.h
+*.secret
+.env
+.env.*
+
+# IDE / editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS artifacts
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# Backup directories
+*_backup/
