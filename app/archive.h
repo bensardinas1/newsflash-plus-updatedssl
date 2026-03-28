@@ -70,6 +70,9 @@ namespace app
         // error/information message
         QString message;
 
+        // archive password from NZB metadata (if any)
+        QString password;
+
         Archive();
 
         quint32 getGuid() const
@@ -83,6 +86,7 @@ namespace app
             file.clear();
             desc.clear();
             message.clear();
+            password.clear();
         }
 
         bool isValid() const

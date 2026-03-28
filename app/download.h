@@ -55,6 +55,9 @@ namespace app
         // The human readable description for the download.
         QString desc;
 
+        // Archive password extracted from NZB metadata (if any).
+        QString password;
+
         // Priority flag downloads to the top of the queue
         bool priority;
 

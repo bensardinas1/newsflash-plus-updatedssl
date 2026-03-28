@@ -43,10 +43,12 @@ NZBThread::~NZBThread()
 void NZBThread::run() 
 {
     std::vector<NZBContent> data;
-    const auto result = parseNZB(*io_.get(), data);
+    NZBMetaData meta;
+    const auto result = parseNZB(*io_.get(), data, meta);
 
     std::lock_guard<std::mutex> lock(mutex_);
     data_  = std::move(data);
+    meta_  = std::move(meta);
     error_ = result;
 
     emit complete();
@@ -59,6 +61,15 @@ NZBError NZBThread::result(std::vector<NZBContent>& data)
     std::lock_guard<std::mutex> lock(mutex_);
 
     data = std::move(data_);
+    return error_;
+}
+
+NZBError NZBThread::result(std::vector<NZBContent>& data, NZBMetaData& meta)
+{
+    std::lock_guard<std::mutex> lock(mutex_);
+
+    data = std::move(data_);
+    meta = std::move(meta_);
     return error_;
 }    
 

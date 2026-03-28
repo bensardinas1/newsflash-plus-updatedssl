@@ -79,10 +79,11 @@ void ArchiveManager::packCompleted(const app::FilePackInfo& pack)
             continue;
 
         Archive arc;
-        arc.path  = pack.path;
-        arc.desc  = file.fileName();
-        arc.file  = file.fileName();
-        arc.state = Archive::Status::Queued;
+        arc.path     = pack.path;
+        arc.desc     = file.fileName();
+        arc.file     = file.fileName();
+        arc.password = pack.password;
+        arc.state    = Archive::Status::Queued;
         m_repairer.addRecovery(arc);
 
         // record how many pending repairs we have scheduled for the archives
@@ -113,10 +114,11 @@ void ArchiveManager::packCompleted(const app::FilePackInfo& pack)
                 continue;
 
             Archive arc;
-            arc.path = pack.path;
-            arc.desc = file.fileName();
-            arc.file = file.fileName();
-            arc.state = Archive::Status::Queued;
+            arc.path     = pack.path;
+            arc.desc     = file.fileName();
+            arc.file     = file.fileName();
+            arc.password = pack.password;
+            arc.state    = Archive::Status::Queued;
             m_repairer.addRecovery(arc);
             m_repairs[pack.path]++;
 
@@ -138,10 +140,11 @@ void ArchiveManager::packCompleted(const app::FilePackInfo& pack)
         for (const auto& vol : volumes)
         {
             Archive unrar;
-            unrar.path  = pack.path;
-            unrar.file  = vol;
-            unrar.desc  = vol;
-            unrar.state = Archive::Status::Queued;
+            unrar.path     = pack.path;
+            unrar.file     = vol;
+            unrar.desc     = vol;
+            unrar.password = pack.password;
+            unrar.state    = Archive::Status::Queued;
             m_unpacker.addUnpack(unrar);
             m_unpacks.insert(pack.path + "/" + vol);
 
@@ -188,10 +191,11 @@ void ArchiveManager::repairReady(const app::Archive& arc)
             continue;
 
         Archive unrar;
-        unrar.path  = arc.path;
-        unrar.file  = vol;
-        unrar.desc  = vol;
-        unrar.state = Archive::Status::Queued;
+        unrar.path     = arc.path;
+        unrar.file     = vol;
+        unrar.desc     = vol;
+        unrar.password = arc.password;
+        unrar.state    = Archive::Status::Queued;
         m_unpacker.addUnpack(unrar);
         m_unpacks.insert(arc.path + "/" + vol);
 
@@ -227,10 +231,11 @@ void ArchiveManager::unpackReady(const app::Archive& arc)
             continue;
 
         Archive unrar;
-        unrar.path = arc.path;
-        unrar.file = vol;
-        unrar.desc = vol;
-        unrar.state = Archive::Status::Queued;
+        unrar.path     = arc.path;
+        unrar.file     = vol;
+        unrar.desc     = vol;
+        unrar.password = arc.password;
+        unrar.state    = Archive::Status::Queued;
         m_unpacks.insert(arc.path + "/" + vol);
         m_pendingArchives.insert(unrar.getGuid());
     }

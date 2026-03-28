@@ -128,6 +128,8 @@ void NZBFile::downloadSel(const QModelIndexList& list, quint32 account, const QS
     download.basepath = folder;
     download.folder   = desc;
     download.desc     = desc;
+    if (!mMeta.passwords.isEmpty())
+        download.password = mMeta.passwords.first();
     g_engine->downloadNzbContents(download, std::move(selected));
 }
 
@@ -142,6 +144,8 @@ void NZBFile::downloadAll(quint32 account, const QString& folder, const QString&
     download.basepath = folder;
     download.folder   = desc;
     download.desc     = desc;
+    if (!mMeta.passwords.isEmpty())
+        download.password = mMeta.passwords.first();
     g_engine->downloadNzbContents(download, std::move(everything));
 }
 
@@ -309,7 +313,7 @@ void NZBFile::parseComplete()
 {
     DEBUG("Parse_complete %1", mSourceDesc);
 
-    const auto result = mThread->result(mData);
+    const auto result = mThread->result(mData, mMeta);
     switch (result)
     {
         case NZBError::None:

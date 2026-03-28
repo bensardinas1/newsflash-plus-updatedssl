@@ -33,7 +33,8 @@ namespace {
 class MyHandler : public QXmlDefaultHandler
 {
 public:
-    MyHandler(std::vector<app::NZBContent>& contents) : contents_(contents), nzb_error_(false), xml_error_(false)
+    MyHandler(std::vector<app::NZBContent>& contents, app::NZBMetaData* meta = nullptr)
+        : contents_(contents), meta_(meta), nzb_error_(false), xml_error_(false)
     {}
 
     virtual bool characters(const QString& ch) override
@@ -69,6 +70,10 @@ public:
                 segment.append('>');
 
             content.segments.push_back(segment.toStdString());
+        }
+        else if (curr_element_is("meta") && meta_)
+        {
+            metaText_ += ch;
         }
         return true;
     }
@@ -113,6 +118,19 @@ public:
             if (!has_content())
                 return false;
         }
+        else if (element == "meta")
+        {
+            if (!curr_element_is("head"))
+                return false;
+
+            metaType_ = attrs.value("type").toLower();
+            metaText_.clear();
+        }
+        else if (element == "head")
+        {
+            if (!curr_element_is("nzb"))
+                return false;
+        }
         stack_.push(element);
         nzb_error_ = false;
         return true;
@@ -128,6 +146,24 @@ public:
         const auto& top = stack_.top();
         if (top != name)
             return false;
+
+        if (name.toLower() == "meta" && meta_)
+        {
+            const QString value = metaText_.trimmed();
+            if (!value.isEmpty())
+            {
+                if (metaType_ == "password")
+                    meta_->passwords.append(value);
+                else if (metaType_ == "title")
+                    meta_->title = value;
+                else if (metaType_ == "category")
+                    meta_->category = value;
+                else if (metaType_ == "tag")
+                    meta_->tags.append(value);
+            }
+            metaType_.clear();
+            metaText_.clear();
+        }
 
         stack_.pop();
         return true;
@@ -173,8 +209,11 @@ private:
 
 private:
     std::vector<app::NZBContent>& contents_;
+    app::NZBMetaData* meta_ = nullptr;
     QStack<QString> stack_;
-    QString error_;    
+    QString error_;
+    QString metaType_;
+    QString metaText_;
     bool nzb_error_;
     bool xml_error_;
     
@@ -207,6 +246,29 @@ NZBError parseNZB(QIODevice& io, std::vector<NZBContent>& content)
     //content.append(data);
     std::copy(std::begin(data), std::end(data), std::back_inserter(content));
     return NZBError::None;    
+}
+
+NZBError parseNZB(QIODevice& io, std::vector<NZBContent>& content, NZBMetaData& meta)
+{
+    std::vector<NZBContent> data;
+
+    MyHandler handler(data, &meta);
+    QXmlInputSource source(&io);
+    QXmlSimpleReader reader;
+
+    reader.setContentHandler(&handler);
+    reader.setErrorHandler(&handler);
+    if (!reader.parse(&source))
+    {
+        if (!io.isOpen())
+            return NZBError::Io;
+        else if (handler.nzb_error())
+            return NZBError::NZB;
+
+        return NZBError::XML;
+    }
+    std::copy(std::begin(data), std::end(data), std::back_inserter(content));
+    return NZBError::None;
 }
 
 } // app

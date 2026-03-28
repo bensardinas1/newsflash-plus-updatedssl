@@ -108,6 +108,11 @@ void Unrar::extract(const Archive& arc, const Settings& settings)
         args << "-o+"; // enable overwrite.
     else args << "-or"; // rename automatically
 
+    if (!arc.password.isEmpty())
+        args << ("-p" + arc.password);
+    else
+        args << "-p-"; // disable password prompt (non-interactive)
+
     args << arc.file;
 
     // important. we must set the current_ *before* calling start()

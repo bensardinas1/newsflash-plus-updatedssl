@@ -89,9 +89,13 @@ namespace app
     private slots:
         void parseComplete();
 
+        const NZBMetaData& getMetaData() const
+        { return mMeta; }
+
     private:
         std::unique_ptr<NZBThread> mThread;
         std::vector<NZBContent> mData;
+        NZBMetaData mMeta;
     private:
         QString mSourceDesc;
         QByteArray mSourceBuffer;

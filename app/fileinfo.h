@@ -63,6 +63,9 @@ namespace app
         // human readable description
         QString desc;
 
+        // archive password from NZB metadata (if any)
+        QString password;
+
         quint64 numFiles = 0;
 
         bool damaged = false;

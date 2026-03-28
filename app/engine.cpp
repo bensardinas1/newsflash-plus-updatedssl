@@ -230,6 +230,9 @@ bool Engine::downloadNzbContents(const Download& download, std::vector<NZBConten
     }
     engine_->DownloadFiles(std::move(batch), download.priority);
 
+    if (!download.password.isEmpty())
+        passwords_[QDir(location).absolutePath()] = download.password;
+
     start();
 
     INFO("Downloading \"%1\"", download.desc);
@@ -626,6 +629,13 @@ void Engine::onBatchComplete(const newsflash::ui::FileBatchResult& batch)
     pack.path     = path;
     pack.numFiles = batch.filecount;
     pack.damaged  = batch.damaged;
+
+    auto pwIt = passwords_.find(path);
+    if (pwIt != passwords_.end())
+    {
+        pack.password = pwIt->second;
+        passwords_.erase(pwIt);
+    }
 
     emit packCompleted(pack);
 }

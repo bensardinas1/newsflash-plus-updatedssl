@@ -52,6 +52,9 @@ namespace app
         // has been emitted indicating completion.
         NZBError result(std::vector<NZBContent>& data);
 
+        // get the result including NZB 1.1 metadata.
+        NZBError result(std::vector<NZBContent>& data, NZBMetaData& meta);
+
     signals:
         // complete signal is emitted once the data from the IO object
         // has been read and parsed. The result + the parsed nzb data
@@ -64,6 +67,7 @@ namespace app
     private:
         std::unique_ptr<QIODevice> io_;
         std::vector<NZBContent> data_;
+        NZBMetaData meta_;
         std::mutex mutex_;
         NZBError error_;
     };

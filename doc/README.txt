@@ -50,4 +50,20 @@ Shutting down PC on Windows machines:
   Newsflash needs to be run with adminstrator privileges
 
 
+NZB DTD 1.1 Metadata Support:
+
+  Newsflash Plus now parses the <head><meta> section defined in the
+  NZB 1.1 DTD specification. The following meta types are supported:
+
+    - password   Automatically passed to unrar during extraction
+    - title      Parsed and stored for future UI use
+    - category   Parsed and stored for future UI use
+    - tag        Parsed and stored (multiple tags supported)
+
+  Password-protected archives embedded in NZB files with
+  <meta type="password"> will now extract without manual intervention.
+  This works for both manually opened NZB files and auto-downloaded
+  NZB files from watched folders.
+
+
 www.ensisoft.com

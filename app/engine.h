@@ -379,6 +379,9 @@ namespace app
         // todo: this should move away from here, but ok..
         std::map<MainMediaType, QString> downloads_;
 
+        // mapping of download paths to archive passwords from NZB metadata.
+        std::map<QString, QString> passwords_;
+
         // some flags.
         bool connect_ = true;
         bool shutdown_ = false;

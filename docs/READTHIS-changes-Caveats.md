@@ -204,6 +204,64 @@ newsflash.exe
 
 ---
 
+## NZB DTD 1.1 Metadata Support
+
+Added parsing and propagation of NZB 1.1 DTD `<head><meta>` elements. The NZB 1.1 specification defines four metadata types: `password`, `title`, `category`, and `tag`. These are embedded in the NZB XML as:
+
+```xml
+<nzb xmlns="http://www.newzbin.com/DTD/2003/nzb">
+  <head>
+    <meta type="password">secret123</meta>
+    <meta type="title">My Download</meta>
+    <meta type="category">Movies</meta>
+    <meta type="tag">HD</meta>
+    <meta type="tag">x264</meta>
+  </head>
+  <file ...>
+    ...
+  </file>
+</nzb>
+```
+
+### Data Flow
+
+The password flows through the full download-to-extraction pipeline:
+
+```
+NZB XML → parseNZB() → NZBMetaData → NZBThread → NZBFile
+  → Download.password → Engine (stored by path)
+  → FilePackInfo.password → ArchiveManager
+  → Archive.password → Unrar (-p flag)
+```
+
+### Files Changed
+
+| File | Change |
+|------|--------|
+| `app/nzbparse.h` | Added `NZBMetaData` struct (passwords, title, category, tags); added overloaded `parseNZB()` with metadata parameter |
+| `app/nzbparse.cpp` | SAX handler now processes `<head>` and `<meta>` elements; accumulates text content and dispatches by `type` attribute (password/title/category/tag) in `endElement()` |
+| `app/nzbthread.h` | Added `NZBMetaData meta_` member; added overloaded `result()` that returns metadata |
+| `app/nzbthread.cpp` | Background thread now uses metadata-aware `parseNZB()` overload |
+| `app/nzbfile.h` | Added `NZBMetaData mMeta` member and `getMetaData()` accessor |
+| `app/nzbfile.cpp` | Retrieves metadata from thread; passes first password to `Download` struct in `downloadSel()` and `downloadAll()` |
+| `app/download.h` | Added `QString password` field to `Download` struct |
+| `app/engine.h` | Added `std::map<QString, QString> passwords_` to map download paths to archive passwords |
+| `app/engine.cpp` | Stores password by absolute path when download starts; attaches password to `FilePackInfo` when batch completes; cleans up map entry after use |
+| `app/fileinfo.h` | Added `QString password` field to `FilePackInfo` struct |
+| `app/arcman.cpp` | Propagates `pack.password` to all `Archive` objects created for par2 repair and unrar extraction, including across the repair→unpack flow |
+| `app/archive.h` | Added `QString password` field to `Archive` struct; included in `clear()` |
+| `app/unrar.cpp` | Passes `-p<password>` to unrar when password is set; passes `-p-` (disable password prompting) when no password is available, preventing unrar from hanging on interactive prompt |
+| `app/nzbcore.cpp` | Auto-download from watched folders now parses NZB metadata and passes first password to `Download` |
+
+### Security Notes
+
+- **No injection risk**: Passwords are passed to `QProcess` as `QStringList` argv entries, never through a shell. A malicious password string cannot escape into shell interpretation.
+- **No XXE risk**: `QXmlSimpleReader` (SAX) does not resolve external entities by default.
+- **No path traversal**: Meta field values are never used in filesystem path construction.
+- **Non-interactive unrar**: The `-p-` flag is always set when no password is provided, preventing unrar from hanging on a TTY password prompt.
+
+---
+
 ## Complete Modified File List
 
 ### Security & Functionality
@@ -232,3 +290,19 @@ newsflash.exe
 - `app/version.cpp` — zlib include
 - `engine/unit_test/unit_test_bigfile.cpp` — Narrowing fix
 - `engine/unit_test/unit_test_sslsocket.cpp` — Modern OpenSSL APIs
+
+### NZB DTD 1.1 Metadata
+- `app/nzbparse.h` — NZBMetaData struct, overloaded parseNZB
+- `app/nzbparse.cpp` — SAX parsing of `<head><meta>` elements
+- `app/nzbthread.h` — Metadata member and result overload
+- `app/nzbthread.cpp` — Metadata-aware parsing
+- `app/nzbfile.h` — Metadata storage and accessor
+- `app/nzbfile.cpp` — Password propagation to Download
+- `app/download.h` — Password field
+- `app/engine.h` — Password-by-path map
+- `app/engine.cpp` — Password storage and FilePackInfo attachment
+- `app/fileinfo.h` — Password in FilePackInfo
+- `app/arcman.cpp` — Password propagation to Archive objects
+- `app/archive.h` — Password field
+- `app/unrar.cpp` — Password flag for unrar extraction
+- `app/nzbcore.cpp` — Metadata parsing for auto-download

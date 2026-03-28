@@ -25,8 +25,10 @@
 #  include <QDir>
 #  include <QStringList>
 #  include <QFile>
+#  include <QBuffer>
 #include <newsflash/warnpop.h>
 #include "nzbcore.h"
+#include "nzbparse.h"
 #include "nzbthread.h"
 #include "debug.h"
 #include "eventlog.h"
@@ -75,6 +77,12 @@ bool NZBCore::downloadNzbContents(const QString& file, const QString& basePath, 
 
     io.close();
 
+    // parse NZB metadata for password
+    QBuffer metaBuf(const_cast<QByteArray*>(&nzb));
+    std::vector<NZBContent> tmpItems;
+    NZBMetaData meta;
+    parseNZB(metaBuf, tmpItems, meta);
+
     Download download;
     download.type     = MediaType::Other;
     download.source   = MediaSource::File;
@@ -82,6 +90,8 @@ bool NZBCore::downloadNzbContents(const QString& file, const QString& basePath, 
     download.basepath = basePath;
     download.folder   = path;
     download.desc     = desc;
+    if (!meta.passwords.isEmpty())
+        download.password = meta.passwords.first();
     return g_engine->downloadNzbContents(download, nzb);
 }
 

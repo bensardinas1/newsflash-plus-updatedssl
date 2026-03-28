@@ -25,6 +25,7 @@
 #include <newsflash/warnpush.h>
 #  include <QtGui/QIcon>
 #  include <QString>
+#  include <QStringList>
 #include <newsflash/warnpop.h>
 #include <string>
 #include <vector>
@@ -61,6 +62,14 @@ namespace app
         quint64 bytes;
     };
 
+    // NZB 1.1 DTD metadata parsed from <head><meta> elements.
+    struct NZBMetaData {
+        QStringList passwords;
+        QString title;
+        QString category;
+        QStringList tags;
+    };
+
     enum class NZBError {
         None, XML, NZB, Io, Other
     };
@@ -68,5 +77,8 @@ namespace app
     // parse nzb content from from input and store in the list of contents.
     // returns nzberror code indicating the result of the parsing.
     NZBError parseNZB(QIODevice& io, std::vector<NZBContent>& content);
+
+    // parse nzb content and metadata from input.
+    NZBError parseNZB(QIODevice& io, std::vector<NZBContent>& content, NZBMetaData& meta);
 
 } // app
