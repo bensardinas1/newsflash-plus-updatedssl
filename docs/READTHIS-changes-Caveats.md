@@ -204,6 +204,22 @@ newsflash.exe
 
 ---
 
+## Bug Fixes
+
+### NZB Metadata Parse Order (`nzbparse.cpp`)
+
+The SAX `characters()` handler had an early-return guard (`has_content()`) that returned `true` when `contents_` was empty — i.e. before any `<file>` element had been parsed.  Since `<head>/<meta>` elements appear **before** `<file>` in NZB XML, the password text was silently discarded.  Fixed by moving the `<meta>` text handling above the `has_content()` guard.
+
+### Password Path Separator Mismatch (`engine.cpp`)
+
+On Windows, passwords were stored with `QDir::absolutePath()` as the key (forward slashes: `D:/Downloads/...`) but looked up after `QDir::toNativeSeparators()` (backslashes: `D:\Downloads\...`).  The lookup always failed.  Fixed by applying `toNativeSeparators()` to the store key.
+
+### Par2 Status Detection for par2cmdline-turbo (`parstate.cpp`)
+
+The par2 stdout state machine recognized `^Repair is not required` as success, but par2cmdline-turbo outputs `All files are correct, repair is not required.` — the regex never matched, so `getSuccess()` stayed `false` and the app reported "Failed" despite exit code 0.  Fixed by also recognizing `^All files are correct`.
+
+---
+
 ## NZB DTD 1.1 Metadata Support
 
 Added parsing and propagation of NZB 1.1 DTD `<head><meta>` elements. The NZB 1.1 specification defines four metadata types: `password`, `title`, `category`, and `tag`. These are embedded in the NZB XML as:
@@ -303,6 +319,12 @@ The `Par2`, `Unrar`, `Unzip`, and `Process` destructors no longer fire fatal `AS
 
 Fixed a missing `break` in `Process::processError()` where the `QProcess::WriteError` case fell through to `QProcess::UnknownError`, causing write errors to be misreported as "other error".
 
+### Bug Fix: `FailedToStart` Never Notified Callers
+
+When an external tool (par2, unrar, 7za) failed to start — e.g. the executable was not found — `QProcess` emits `error(FailedToStart)` but does **not** emit `finished()`.  The `Process` class recorded the error but never called `onFinished`, so consumers like `Par2::onFinished()` → `onReady()` were never invoked.  This left the Repairer/Unpacker UI permanently stuck in "Active" state.
+
+Fixed by explicitly calling `onFinished` from `processError()` when the error is `FailedToStart`.  Also added a specific `FailedToStart` error branch in `par2.cpp` with a clear user message.
+
 ### Files Changed
 
 | File | Change |
@@ -362,7 +384,8 @@ Fixed a missing `break` in `Process::processError()` where the `QProcess::WriteE
 
 ### External Process Control
 - `app/process.h` — Added `exitCode()` accessor, `mExitCode` member
-- `app/process.cpp` — Store exit code in `processFinished()`; graceful shutdown (terminate + 3s wait before forced kill); fix `WriteError` fallthrough bug; safe destructor
-- `app/par2.cpp` — Cross-check exit code with state machine; safe destructor
+- `app/process.cpp` — Store exit code in `processFinished()`; graceful shutdown (terminate + 3s wait before forced kill); fix `WriteError` fallthrough bug; safe destructor; call `onFinished` on `FailedToStart`
+- `app/par2.cpp` — Cross-check exit code with state machine; safe destructor; explicit `FailedToStart` error handling
+- `app/parstate.cpp` — Recognize par2cmdline-turbo "All files are correct" output as success
 - `app/unrar.cpp` — Detect wrong password (exit 11) and CRC error (exit 3); safe destructor
 - `app/unzip.cpp` — Add `-p<password>` support for 7za; detect wrong password hint (exit 2); safe destructor

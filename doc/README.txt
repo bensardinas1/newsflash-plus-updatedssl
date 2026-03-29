@@ -101,5 +101,35 @@ External Process Control Improvements:
     (assert failure) if destroyed while a process is still active.
     They now stop the process gracefully during destruction.
 
+  FailedToStart Recovery
+    When an external tool cannot be found or fails to start,
+    the process layer now notifies callers immediately instead
+    of leaving operations stuck in an "Active" state forever.
+    Qt does not emit finished() on FailedToStart, so the
+    Process class handles this explicitly.
+
+
+Bug Fixes:
+
+  NZB Metadata Parse Order
+    The SAX parser's characters() handler had an early-return
+    guard (has_content()) that prevented <meta> text from being
+    captured.  The <head>/<meta> elements appear before any
+    <file> elements in NZB XML, so the password was silently
+    lost.  Fixed by handling <meta> text before the guard.
+
+  Password Path Separator Mismatch (Windows)
+    The engine stored passwords keyed by QDir::absolutePath()
+    (forward slashes) but looked them up after
+    QDir::toNativeSeparators() (backslashes on Windows).
+    The key was never found.  Fixed by normalizing the store
+    key with toNativeSeparators().
+
+  Par2 Status Detection for par2cmdline-turbo
+    par2cmdline-turbo outputs "All files are correct, repair
+    is not required" instead of the original par2cmdline's
+    "Repair is not required".  The state machine now
+    recognizes both forms.
+
 
 www.ensisoft.com

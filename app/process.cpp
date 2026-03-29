@@ -293,6 +293,16 @@ void Process::processError(QProcess::ProcessError error)
         mLogFile.write("\r\n");
         mLogFile.write("*** process error ***");
         mLogFile.flush();
+        mLogFile.close();
+    }
+
+    // When FailedToStart, Qt does not emit finished(), so the caller
+    // would never be notified.  Fire onFinished ourselves.
+    if (error == QProcess::FailedToStart)
+    {
+        mTimeout.stop();
+        if (onFinished)
+            onFinished();
     }
 }
 

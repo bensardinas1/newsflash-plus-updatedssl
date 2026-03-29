@@ -175,6 +175,12 @@ void Par2::onFinished()
         mCurrentArchive.message = "Hung/froze :(";
         mCurrentArchive.state   = Archive::Status::Error;
     }
+    else if (error == Process::Error::FailedToStart)
+    {
+        ERROR("Par2 process failed to start when repairing %1", mCurrentArchive.file);
+        mCurrentArchive.message = "Failed to start par2 :(";
+        mCurrentArchive.state   = Archive::Status::Error;
+    }
     else
     {
         ERROR("Par2 process failed to repair %1", mCurrentArchive.file);
