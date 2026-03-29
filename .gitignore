@@ -46,3 +46,5 @@ Desktop.ini
 
 # Backup directories
 *_backup/
+
+*.dmp

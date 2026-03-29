@@ -262,6 +262,59 @@ NZB XML → parseNZB() → NZBMetaData → NZBThread → NZBFile
 
 ---
 
+## External Process Control Improvements
+
+Improved management of the three external CLI tools (par2, unrar, 7za) used for archive repair and extraction.
+
+### Graceful Shutdown
+
+Process termination now uses a two-phase approach:
+1. `QProcess::terminate()` — sends SIGTERM (Unix) / WM_CLOSE (Windows)
+2. Wait up to 3 seconds for the process to exit cleanly
+3. If still running, `QProcess::kill()` — forced termination
+
+This allows tools like UnRAR (which handles SIGINT) to clean up temporary files instead of being killed mid-write.
+
+### Exit Code Awareness
+
+The `Process` class now exposes `exitCode()` and all three archiver implementations inspect it:
+
+| Tool | Exit Code | Meaning | User Message |
+|------|-----------|---------|-------------|
+| UnRAR | 11 | `RARX_BADPWD` — wrong password | "Wrong password." |
+| UnRAR | 3 | `RARX_CRC` — CRC error | "CRC error (archive is corrupt)." |
+| 7za | 2 (with password) | Fatal error (likely wrong password) | "Wrong password or archive error." |
+| Par2 | non-zero | Repair failure | Cross-checked with stdout state machine |
+
+Previously, exit codes were logged but discarded — all error classification relied solely on stdout/stderr parsing.
+
+### 7-Zip Password Support
+
+The `Unzip` class now passes `-p<password>` to 7za when `arc.password` is set. Previously, password-protected 7z/zip archives would always fail because no password mechanism existed.
+
+### Safe Destructors
+
+The `Par2`, `Unrar`, `Unzip`, and `Process` destructors no longer fire fatal `ASSERT` macros (which generate minidump crash files) when destroyed with a process still running. Instead, they call `stop()` / `kill()` to clean up gracefully. This fixes crashes on:
+- Application exit while repair/extraction is active
+- Deleting a download that has an active process
+- Shutdown ordering edge cases
+
+### Bug Fix: `WriteError` Fallthrough
+
+Fixed a missing `break` in `Process::processError()` where the `QProcess::WriteError` case fell through to `QProcess::UnknownError`, causing write errors to be misreported as "other error".
+
+### Files Changed
+
+| File | Change |
+|------|--------|
+| `app/process.h` | Added `exitCode()` accessor and `mExitCode` member |
+| `app/process.cpp` | Store exit code; graceful terminate-before-kill; fix `WriteError` fallthrough; safe destructor |
+| `app/par2.cpp` | Cross-check exit code with state machine for success; safe destructor |
+| `app/unrar.cpp` | Detect wrong password (exit 11) and CRC error (exit 3); safe destructor |
+| `app/unzip.cpp` | Add `-p<password>` flag for 7za; detect wrong password hint (exit 2); safe destructor |
+
+---
+
 ## Complete Modified File List
 
 ### Security & Functionality
@@ -306,3 +359,10 @@ NZB XML → parseNZB() → NZBMetaData → NZBThread → NZBFile
 - `app/archive.h` — Password field
 - `app/unrar.cpp` — Password flag for unrar extraction
 - `app/nzbcore.cpp` — Metadata parsing for auto-download
+
+### External Process Control
+- `app/process.h` — Added `exitCode()` accessor, `mExitCode` member
+- `app/process.cpp` — Store exit code in `processFinished()`; graceful shutdown (terminate + 3s wait before forced kill); fix `WriteError` fallthrough bug; safe destructor
+- `app/par2.cpp` — Cross-check exit code with state machine; safe destructor
+- `app/unrar.cpp` — Detect wrong password (exit 11) and CRC error (exit 3); safe destructor
+- `app/unzip.cpp` — Add `-p<password>` support for 7za; detect wrong password hint (exit 2); safe destructor

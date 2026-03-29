@@ -223,7 +223,8 @@ bool ParState::update(const QString& line, ParityChecker::File& file)
     {
         state_.reset(new RepairState);
     }
-    else if (isMatch(line, "^Repair is not required", captures, 0))
+    else if (isMatch(line, "^Repair is not required", captures, 0) ||
+             isMatch(line, "^All files are correct", captures, 0))
     {
         state_.reset(new TerminalState(line, true));
     }

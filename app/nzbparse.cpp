@@ -39,6 +39,14 @@ public:
 
     virtual bool characters(const QString& ch) override
     {
+        // handle <meta> text before checking for <file> content,
+        // since <head>/<meta> appears before any <file> elements.
+        if (curr_element_is("meta") && meta_)
+        {
+            metaText_ += ch;
+            return true;
+        }
+
         if (!has_content())
             return true;
 
@@ -70,10 +78,6 @@ public:
                 segment.append('>');
 
             content.segments.push_back(segment.toStdString());
-        }
-        else if (curr_element_is("meta") && meta_)
-        {
-            metaText_ += ch;
         }
         return true;
     }

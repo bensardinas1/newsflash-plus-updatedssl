@@ -66,4 +66,40 @@ NZB DTD 1.1 Metadata Support:
   NZB files from watched folders.
 
 
+External Process Control Improvements:
+
+  The management of external tools (par2, unrar, 7za) has been
+  improved in several ways:
+
+  Graceful Shutdown
+    Process termination now sends a polite terminate signal first
+    (SIGTERM / WM_CLOSE) and waits up to 3 seconds for the process
+    to exit cleanly. Only if the process ignores the request is it
+    forcefully killed. This lets tools clean up temporary files.
+
+  Exit Code Awareness
+    Newsflash now inspects exit codes from each external tool:
+
+    UnRAR:
+      Exit 11 = Wrong password (reported to user as such)
+      Exit 3  = CRC error / corrupt archive
+
+    7-Zip (7za):
+      Exit 2 with a password set = Wrong password hint
+
+    Par2:
+      Non-zero exit code cross-checked against the stdout
+      state machine for reliable success/failure determination.
+
+  7-Zip Password Support
+    Password-protected 7z/zip archives now receive the -p flag
+    when a password is available from the NZB metadata.
+    Previously 7za had no password support at all.
+
+  Safe Destructors
+    The par2, unrar, and 7za engine objects no longer crash
+    (assert failure) if destroyed while a process is still active.
+    They now stop the process gracefully during destruction.
+
+
 www.ensisoft.com

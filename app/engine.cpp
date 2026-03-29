@@ -231,7 +231,11 @@ bool Engine::downloadNzbContents(const Download& download, std::vector<NZBConten
     engine_->DownloadFiles(std::move(batch), download.priority);
 
     if (!download.password.isEmpty())
-        passwords_[QDir(location).absolutePath()] = download.password;
+    {
+        const auto key = QDir::toNativeSeparators(QDir(location).absolutePath());
+        passwords_[key] = download.password;
+        DEBUG("Stored password for key: %1", key);
+    }
 
     start();
 
