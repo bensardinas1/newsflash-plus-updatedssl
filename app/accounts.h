@@ -113,6 +113,12 @@ namespace app
         // delete the account at index
         void delAccount(std::size_t index);
 
+        // move the account at index one position up in the list.
+        void moveUp(std::size_t index);
+
+        // move the account at index one position down in the list.
+        void moveDown(std::size_t index);
+
         // insert or modify an account.
         // if account already exists it's modified otherwise it's inserted
         void setAccount(const Account& acc);

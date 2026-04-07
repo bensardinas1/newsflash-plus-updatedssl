@@ -78,6 +78,9 @@ void Accounts::addActions(QMenu& menu)
     menu.addAction(ui_.actionDel);
     menu.addSeparator();
     menu.addAction(ui_.actionEdit);
+    menu.addSeparator();
+    menu.addAction(ui_.actionMoveUp);
+    menu.addAction(ui_.actionMoveDown);
 }
 
 void Accounts::addActions(QToolBar& bar)
@@ -86,6 +89,9 @@ void Accounts::addActions(QToolBar& bar)
     bar.addAction(ui_.actionDel);
     bar.addSeparator();
     bar.addAction(ui_.actionEdit);
+    bar.addSeparator();
+    bar.addAction(ui_.actionMoveUp);
+    bar.addAction(ui_.actionMoveDown);
 }
 
 MainWidget::info Accounts::getInformation() const
@@ -165,6 +171,26 @@ void Accounts::on_actionEdit_triggered()
     DlgAccount dlg(this, account, false);
     if (dlg.exec() == QDialog::Accepted)
         app::g_accounts->setAccount(account);
+}
+
+void Accounts::on_actionMoveUp_triggered()
+{
+    const auto row = ui_.listView->currentIndex().row();
+    if (row <= 0)
+        return;
+
+    app::g_accounts->moveUp(row);
+    ui_.listView->setCurrentIndex(app::g_accounts->index(row - 1));
+}
+
+void Accounts::on_actionMoveDown_triggered()
+{
+    const auto row = ui_.listView->currentIndex().row();
+    if (row == -1)
+        return;
+
+    app::g_accounts->moveDown(row);
+    ui_.listView->setCurrentIndex(app::g_accounts->index(row + 1));
 }
 
 void Accounts::currentRowChanged()

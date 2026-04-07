@@ -206,6 +206,31 @@ void Accounts::delAccount(std::size_t index)
     emit accountsUpdated();
 }
 
+void Accounts::moveUp(std::size_t index)
+{
+    if (index == 0 || index >= mAccounts.size())
+        return;
+
+    beginMoveRows(QModelIndex(), index, index, QModelIndex(), index - 1);
+    std::swap(mAccounts[index], mAccounts[index - 1]);
+    endMoveRows();
+
+    emit accountsUpdated();
+}
+
+void Accounts::moveDown(std::size_t index)
+{
+    if (index + 1 >= mAccounts.size())
+        return;
+
+    // Qt docs: destination row for downward move must be index + 2
+    beginMoveRows(QModelIndex(), index, index, QModelIndex(), index + 2);
+    std::swap(mAccounts[index], mAccounts[index + 1]);
+    endMoveRows();
+
+    emit accountsUpdated();
+}
+
 void Accounts::setAccount(const Account& acc)
 {
     auto it = std::find_if(std::begin(mAccounts), std::end(mAccounts),

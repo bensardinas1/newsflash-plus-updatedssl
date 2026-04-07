@@ -26,6 +26,7 @@
 #include <atomic>
 #include <vector>
 #include <string>
+#include <set>
 #include <functional>
 
 #include "session.h"
@@ -298,6 +299,12 @@ namespace newsflash
         void SetAccountId(std::size_t aid)
         { account_ = aid; }
 
+        void AddTriedAccount(std::size_t aid)
+        { tried_accounts_.insert(aid); }
+
+        bool HasTriedAccount(std::size_t aid) const
+        { return tried_accounts_.find(aid) != tried_accounts_.end(); }
+
         void SetTaskId(std::size_t tid)
         { task_ = tid; }
 
@@ -370,6 +377,8 @@ namespace newsflash
         std::vector<std::string> commands_;
     private:
         ContentBufferCallback intermediate_content_buffer_callback_;
+    private:
+        std::set<std::size_t> tried_accounts_;
     };
 
 } // newsflash

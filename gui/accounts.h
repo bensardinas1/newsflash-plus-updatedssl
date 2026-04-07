@@ -52,6 +52,8 @@ namespace gui
         void on_actionAdd_triggered();
         void on_actionDel_triggered();
         void on_actionEdit_triggered();
+        void on_actionMoveUp_triggered();
+        void on_actionMoveDown_triggered();
         void on_btnResetMonth_clicked();
         void on_btnResetAllTime_clicked();
         void on_btnMonthlyQuota_toggled(bool checked);

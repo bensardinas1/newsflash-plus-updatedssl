@@ -1937,14 +1937,36 @@ void Engine::State::on_cmdlist_done(const Connection::CmdListCompletionData& com
 
         const auto failed    = cmds->HasFailedContent();
         const auto fillable  = cmds->IsFillable();
-        const auto filling_enabled = (this->fill_account != 0);
-        if (!cancelled && failed && fillable && filling_enabled)
+        if (!cancelled && failed && fillable)
         {
-            const auto account = cmds->GetAccountId();
-            if (account != fill_account)
+            // mark the current account as tried
+            cmds->AddTriedAccount(cmds->GetAccountId());
+
+            // find the next account that hasn't been tried yet
+            std::size_t next_account = 0;
+
+            // try the designated fill account first (if set and not yet tried)
+            if (this->fill_account != 0 && !cmds->HasTriedAccount(this->fill_account))
             {
-                LOG_D("Cmdlist ", id, " set for refill");
-                cmds->SetAccountId(this->fill_account);
+                next_account = this->fill_account;
+            }
+            else
+            {
+                // try any other available account
+                for (const auto& acc : this->accounts)
+                {
+                    if (!cmds->HasTriedAccount(acc.id))
+                    {
+                        next_account = acc.id;
+                        break;
+                    }
+                }
+            }
+
+            if (next_account != 0)
+            {
+                LOG_D("Cmdlist ", id, " set for refill on account ", next_account);
+                cmds->SetAccountId(next_account);
                 cmds->SetConnId(0);
                 cmds->ClearFailBit();
                 current_cmdlists.push_back(cmds);
